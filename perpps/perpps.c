@@ -41,8 +41,8 @@ static void usage(char *progname)
 		" -d [device]            PHC to use, for example '/dev/ptp0'\n"
 		" -p 1/0                 enable/disable PPS\n"
 		" -P [channel, period]   enable periodic output\n"
-		" -e 1/0		 enable external timestamping\n"
 		"                        0 period time disables the output\n"
+		" -e 1/0		 enable external timestamping\n"
 		"\n",
 		progname);
 }
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	/* Process the command line arguments. */
 	progname = strrchr(argv[0], '/');
 	progname = progname ? 1+progname : argv[0];
-	while (EOF != (c = getopt(argc, argv, "hd:p:P:"))) {
+	while (EOF != (c = getopt(argc, argv, "hd:p:P:e:"))) {
 		switch (c) {
 		case 'd':
 			device = optarg;
@@ -75,7 +75,8 @@ int main(int argc, char *argv[])
 			break;
 		case 'e':
 			exttsel = 1;
-			exttsen = atoi(optarg); 
+			exttsen = atoi(optarg);
+			break;
 		case 'h':
 			usage(progname);
 			return 0;
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
 		
 		memset(&perout, 0, sizeof(extts));
 		extts.index   = 0;
-		extts.flags  = PTP_RISING_EDGE | (exttsen?1:0);
+		extts.flags  = PTP_RISING_EDGE | (exttsen?PTP_ENABLE_FEATURE:0);
 
 		err = ioctl(fd, PTP_EXTTS_REQUEST, &extts);
 		if (err < 0){
