@@ -224,6 +224,20 @@ IGB_PARAM(QueuePairs, "Enable Tx/Rx queue pairs for interrupt handling (0,1), de
  */
  IGB_PARAM(DMAC, "Disable or set latency for DMA Coalescing ((0=off, 1000-10000(msec), 250, 500 (usec))");
 
+#ifdef CONFIG_IGB_PTP
+/* Define PPS output compensation 
+ *
+ * Valid Values: 0 - INT_MAX-1
+ *
+ * Default Value: 0
+ */
+ IGB_PARAM(PPS_COMP, "PPS output compensation (in nsecs), default 0");
+#define DEFAULT_PPS_COMP	0
+#define MAX_PPS_COMP		100000000
+#define MIN_PPS_COMP		0 
+
+#endif
+
 #ifndef IGB_NO_LRO
 /* Enable/disable Large Receive Offload
  *
@@ -834,5 +848,25 @@ void __devinit igb_check_options(struct igb_adapter *adapter)
 		}
 #endif
 	}
+#ifdef CONFIG_IGB_PTP
+	{ /* PPS compensation */
+		struct igb_option opt = {
+			.type = enable_option,
+			.name = "Select PPS compensation in nsecs (0 - 1e9)",
+			.err  = "defaulting to 0",
+			.def  = DEFAULT_PPS_COMP,
+			.arg = {.r = {	.min = MIN_PPS_COMP,
+					.max = MAX_PPS_COMP } }
+		};
+
+#ifdef module_param_array
+		if (num_PPS_COMP > bd) {
+#endif
+			unsigned int pps_comp = PPS_COMP[bd];
+			igb_validate_option(&pps_comp, &opt, adapter);
+			adapter->pps_delay = pps_comp;
+		}
+	}
+#endif
 }
 

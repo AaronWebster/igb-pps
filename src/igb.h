@@ -566,10 +566,15 @@ struct igb_adapter {
 	struct ptp_clock_info ptp_caps;
 	struct delayed_work ptp_overflow_work;
 	struct work_struct ptp_tx_work;
+	struct work_struct ptp_pps_work;
+	struct work_struct ptp_extts_work;
+	struct work_struct ptp_fire_pps_event_work;
 	struct sk_buff *ptp_tx_skb;
 	spinlock_t tmreg_lock;
 	struct cyclecounter cc;
 	struct timecounter tc;
+	u64 ptp_pps_start;
+	u32 pps_delay;
 #endif /* CONFIG_IGB_PTP */
 };
 
@@ -697,6 +702,8 @@ extern void igb_ptp_init(struct igb_adapter *adapter);
 extern void igb_ptp_stop(struct igb_adapter *adapter);
 extern void igb_ptp_reset(struct igb_adapter *adapter);
 extern void igb_ptp_tx_work(struct work_struct *work);
+extern void igb_ptp_fire_pps_event_work(struct work_struct *work);
+extern void igb_ptp_pps_work(struct work_struct *work);
 extern void igb_ptp_tx_hwtstamp(struct igb_adapter *adapter);
 extern void igb_ptp_rx_hwtstamp(struct igb_q_vector *q_vector,
 				union e1000_adv_rx_desc *rx_desc,

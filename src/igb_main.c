@@ -59,7 +59,7 @@
 #define DRV_DEBUG
 #endif
 #define DRV_HW_PERF
-#define VERSION_SUFFIX
+#define VERSION_SUFFIX "-PTP"
 
 #define MAJ 4
 #define MIN 0
@@ -241,7 +241,6 @@ static struct pci_error_handlers igb_err_handler = {
 	.resume = igb_io_resume,
 };
 #endif
-
 static void igb_init_fw(struct igb_adapter *adapter);
 static void igb_init_dmac(struct igb_adapter *adapter, u32 pba);
 
@@ -2315,6 +2314,7 @@ static int __devinit igb_probe(struct pci_dev *pdev,
 #ifdef CONFIG_IGB_PTP
 	/* do hw tstamp init after resetting */
 	igb_ptp_init(adapter);
+	
 #endif /* CONFIG_IGB_PTP */
 
 	dev_info(pci_dev_to_dev(pdev), "Intel(R) Gigabit Ethernet Network Connection\n");
@@ -5169,12 +5169,27 @@ static irqreturn_t igb_msix_other(int irq, void *data)
 	if (icr & E1000_ICR_TS) {
 		u32 tsicr = E1000_READ_REG(hw, E1000_TSICR);
 
+		if(tsicr & E1000_TSICR_TT1) {
+			/* acknowledge the interrupt */
+			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT1);
+			/* process the external event */
+			schedule_work(&adapter->ptp_pps_work);
+			schedule_work(&adapter->ptp_fire_pps_event_work);
+		}
+
+		if(tsicr & E1000_TSICR_AUTT1) {
+			/* acknowledge the interrupt */
+			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT1);
+			/* process the external event */
+			schedule_work(&adapter->ptp_extts_work);
+		}
+
 		if (tsicr & E1000_TSICR_TXTS) {
 			/* acknowledge the interrupt */
 			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_TXTS);
 			/* retrieve hardware timestamp */
 			schedule_work(&adapter->ptp_tx_work);
-		}
+		}		
 	}
 #endif /* CONFIG_IGB_PTP */
 
@@ -5183,7 +5198,7 @@ static irqreturn_t igb_msix_other(int irq, void *data)
 		igb_process_mdd_event(adapter);
 
 	E1000_WRITE_REG(hw, E1000_EIMS, adapter->eims_other);
-
+	E1000_WRITE_FLUSH(hw);
 	return IRQ_HANDLED;
 }
 
@@ -6066,6 +6081,15 @@ static irqreturn_t igb_intr_msi(int irq, void *data)
 	if (icr & E1000_ICR_TS) {
 		u32 tsicr = E1000_READ_REG(hw, E1000_TSICR);
 
+		if(tsicr & (E1000_TSICR_TT0)) {
+			/* acknowledge the interrupt */
+			E1000_WRITE_REG(hw, E1000_TSICR, (E1000_TSICR_TT0 | E1000_TSICR_TT1));
+			printk("Hello msi intr!\n");
+			/* rearm the output */
+			//schedule_work(&adapter->ptp_pps_work);
+			//schedule_work(&adapter->ptp_fire_pps_event_work);
+		}
+
 		if (tsicr & E1000_TSICR_TXTS) {
 			/* acknowledge the interrupt */
 			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_TXTS);
@@ -6119,6 +6143,14 @@ static irqreturn_t igb_intr(int irq, void *data)
 #ifdef CONFIG_IGB_PTP
 	if (icr & E1000_ICR_TS) {
 		u32 tsicr = E1000_READ_REG(hw, E1000_TSICR);
+
+		if(tsicr & (E1000_TSICR_TT0)) {
+			/* acknowledge the interrupt */
+			E1000_WRITE_REG(hw, E1000_TSICR, (E1000_TSICR_TT0 | E1000_TSICR_TT1));
+			/* rearm the output */
+			//schedule_work(&adapter->ptp_pps_work);
+			//schedule_work(&adapter->ptp_fire_pps_event_work);
+		}
 
 		if (tsicr & E1000_TSICR_TXTS) {
 			/* acknowledge the interrupt */

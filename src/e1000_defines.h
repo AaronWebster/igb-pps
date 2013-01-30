@@ -1054,8 +1054,57 @@
 #define E1000_TIMINCA_INCPERIOD_SHIFT	24
 #define E1000_TIMINCA_INCVALUE_MASK	0x00FFFFFF
 
-#define E1000_TSICR_TXTS		0x00000002
-#define E1000_TSIM_TXTS			0x00000002
+#define E1000_TSAUXC_EN_CLK0	(1<<2)
+#define E1000_TSAUXC_ST0	(1<<4)
+#define E1000_TSAUXC_EN_CLK1	(1<<5)
+#define E1000_TSAUXC_ST1	(1<<7)
+#define E1000_TSAUXC_PLSG0	(1<<17)
+#define E1000_TSAUXC_EN_TS0	(1<<8)
+#define E1000_TSAUXC_EN_TS1	(1<<10)
+#define E1000_TSAUXC_EN_TT0	(1<<0)
+#define E1000_TSAUXC_EN_TT1	(1<<1)
+
+#define E1000_TS_SDP0_SEL(a)   	((a)<<6) /* select SDP pin for CLK/TT[01] */
+#define E1000_TS_SDP0_EN 	(1<<8)
+#define E1000_TS_SDP0_DATA(a)	((a)<<18) /* select SDP0 data */
+#define E1000_TS_SDP0_DIR(a)	((a)<<22) /* select SDP0 direction (1 - out / 0 - in) */
+
+#define E1000_TS_SDP1_SEL(a)   	((a) << 9) /* select SDP pin for CLK/TT[01] */
+#define E1000_TS_SDP1_EN 	(1<<11)
+#define E1000_TS_SDP1_DATA(a)	((a)<<19) /* select SDP1 data */
+#define E1000_TS_SDP1_DIR(a)	((a)<<23) /* select SDP1 direction (1 - out / 0 - in) */
+
+#define E1000_TS_SDP2_SEL(a)   	((a) << 12) /* select SDP pin for CLK/TT[01] */
+#define E1000_TS_SDP2_EN 	(1<<14)
+#define E1000_TS_SDP2_DATA(a)	((a)<<6) /* select SDP2 data */
+#define E1000_TS_SDP2_DIR(a)	((a)<<10) /* select SDP2 direction (1 - out / 0 - in) */
+
+#define E1000_TS_SDP3_SEL(a)   	((a) << 15) /* select SDP pin for CLK/TT[01] */
+#define E1000_TS_SDP3_EN 	(1<<17)
+#define E1000_TS_SDP3_DIR(a)	((a)<<11) /* select SDP3 direction (1 - out / 0 - in) */
+#define E1000_TS_SDP3_DATA(a)	((a)<<7) /* select SDP3 data */
+
+#define E1000_TS_SDP_AUX0(a)	((a)<<0)
+#define E1000_TS_SDP_AUX0_EN	(1<<2)
+#define E1000_TS_SDP_AUX1(a)	((a)<<3)
+#define E1000_TS_SDP_AUX1_EN	(1<<5)
+
+#define E1000_TSICR_TXTS	0x00000002
+#define E1000_TSIM_TXTS		0x00000002
+#define E1000_IMC_TSYNC 	(1<<19)
+#define E1000_IMS_TSYNC 	E1000_IMC_TSYNC
+
+#define E1000_TSIM_TT0		(1<<3)
+#define E1000_TSICR_TT0		E1000_TSIM_TT0
+#define E1000_TSIM_TT1		(1<<4)
+#define E1000_TSICR_TT1		E1000_TSIM_TT1
+
+#define E1000_TSICR_AUTT0	(1<<5)
+#define E1000_TSIM_AUTT0	E1000_TSICR_AUTT0
+#define E1000_TSICR_AUTT1	(1<<6)
+#define E1000_TSIM_AUTT1	E1000_TSICR_AUTT1
+
+#define E1000_TMAX		(0xFFFFFFFFFFULL)
 /* TUPLE Filtering Configuration */
 #define E1000_TTQF_DISABLE_MASK		0xF0008000 /* TTQF Disable Mask */
 #define E1000_TTQF_QUEUE_ENABLE		0x100   /* TTQF Queue Enable Bit */

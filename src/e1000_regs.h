@@ -566,6 +566,17 @@
 #define E1000_SYSTIMR	0x0B6F8 /* System time register Residue */
 #define E1000_TSICR	0x0B66C /* Interrupt Cause Register */
 #define E1000_TSIM	0x0B674 /* Interrupt Mask Register */
+#define E1000_FREQOUT0  0x0B654
+#define E1000_FREQOUT1  0x0B658
+#define E1000_TSSDP	0x0003C
+#define E1000_TRGTTIML0 0x0b644
+#define E1000_TRGTTIMH0 0x0b648
+#define E1000_TRGTTIML1	0x0b64c
+#define E1000_TRGTTIMH1 0x0b650
+#define E1000_AUXSTMPL0 0x0b65c
+#define E1000_AUXSTMPH0 0x0b660
+#define E1000_AUXSTMPL1 0x0b664
+#define E1000_AUXSTMPH1 0x0b668
 
 /* Filtering Registers */
 #define E1000_SAQF(_n)	(0x05980 + (4 * (_n))) /* Source Address Queue Fltr */

@@ -152,6 +152,7 @@ EXTRA_CFLAGS += $(shell [ -f $(KSRC)/include/linux/modversions.h ] && \
             echo "-DMODVERSIONS -DEXPORT_SYMTAB \
                   -include $(KSRC)/include/linux/modversions.h")
 
+EXTRA_CFLAGS += -DIGB_PTP
 EXTRA_CFLAGS += $(CFLAGS_EXTRA)
 
 RHC := $(KSRC)/include/linux/rhconfig.h
