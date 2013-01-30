@@ -397,31 +397,16 @@ static int igb_ptp_settime_i210(struct ptp_clock_info *ptp,
  */
 void igb_ptp_extts_work(struct work_struct *work)
 {
-	struct igb_adapter *adapter = container_of(work, struct igb_adapter,
-			ptp_pps_work);
+	struct igb_adapter * adapter = container_of(work, struct igb_adapter, ptp_extts_work);
 	struct e1000_hw *hw = &adapter->hw;
-	u32 regval;
-	unsigned long flags;
-	struct timespec end_ts, start_ts;
-	
-	start_ts = ns_to_timespec(adapter->ptp_pps_start);
-	timespec_add_ns(&start_ts,NSEC_PER_SEC);
-	printk("%s (%d): TRGTTIM0: start %ld s %ld ns\n",__FUNCTION__,__LINE__,start_ts.tv_sec,start_ts.tv_nsec);
-	end_ts = start_ts;
-	timespec_add_ns(&end_ts, NSEC_PER_SEC / 5);
-	adapter->ptp_pps_start = timespec_to_ns(&start_ts);
-
-	spin_lock_irqsave(&adapter->tmreg_lock,flags);
-	E1000_WRITE_REG(hw, E1000_TRGTTIML0, start_ts.tv_nsec);
-	E1000_WRITE_REG(hw, E1000_TRGTTIMH0, start_ts.tv_sec);
-	E1000_WRITE_REG(hw, E1000_TRGTTIML1, end_ts.tv_nsec);
-	E1000_WRITE_REG(hw, E1000_TRGTTIMH1, end_ts.tv_sec);
-
-	regval = E1000_READ_REG(hw, E1000_TSAUXC);
-	regval |= (E1000_TSAUXC_EN_TT0 );
-	E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
-	E1000_WRITE_FLUSH(hw); 
-	spin_unlock_irqrestore(&adapter->tmreg_lock,flags);
+	struct ptp_clock_event event;
+	/* prepare PPS event */
+	event.type = PTP_CLOCK_EXTTS;
+	event.index = 0;
+	event.timestamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
+	event.timestamp += E1000_READ_REG(hw, E1000_AUXSTMPH1) * NSEC_PER_SEC;
+	/* fire event */
+	ptp_clock_event(adapter->ptp_clock, &event);
 }
 
 /**
@@ -439,7 +424,7 @@ void igb_ptp_pps_work_i350(struct work_struct *work)
 	unsigned long flags, start, end;
 
 	start = adapter->ptp_pps_start + (u64)NSEC_PER_SEC;
-	end = start + (u64)NSEC_PER_SEC / 5;
+	end = start + (u64)NSEC_PER_SEC / 2;
 	start &= E1000_TMAX;
 	adapter->ptp_pps_start = start;
 	end &= E1000_TMAX;
@@ -494,9 +479,8 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 
 	switch(rq->type) {
 		case PTP_CLK_REQ_EXTTS:
-			return -EOPNOTSUPP;
-			/* TODO!
-			   if(1) {
+			   
+			if(rq->extts.flags & PTP_ENABLE_FEATURE) {
 				// 1 
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
 				regval |= E1000_TS_SDP_AUX1(1) | E1000_TS_SDP_AUX1_EN;
@@ -527,7 +511,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 
 				E1000_WRITE_FLUSH(hw);
-			}*/
+			}
 		break;
 
 		case PTP_CLK_REQ_PEROUT:
@@ -571,12 +555,10 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 			 */
 			spin_lock_irqsave(&adapter->tmreg_lock, flags);
 			cc = igb_ptp_read_82580(&adapter->cc);
-			printk("%s (%d) cc1: %llx\n",__FUNCTION__,__LINE__,cc);
 			stamp = timecounter_cyc2time(&adapter->tc, cc);
 			div_s64_rem(stamp,NSEC_PER_SEC,&remainder);
 			cc += 2 * (u64)NSEC_PER_SEC - remainder;
 			cc &= E1000_TMAX;
-			printk("%s (%d) cc2: %llx\tstamp: %lld\tremainder: %d\n",__FUNCTION__,__LINE__,cc,stamp,remainder);
 			spin_unlock_irqrestore(&adapter->tmreg_lock, flags);
 			E1000_WRITE_REG(hw, E1000_TRGTTIML0, lower_32_bits(cc));
 			E1000_WRITE_REG(hw, E1000_TRGTTIMH0, upper_32_bits(cc));
@@ -620,7 +602,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				/*first timer value = remaining time to the 2nd 
 				  subsequent second minus correction */
 				start = (cc + 2*(u64)NSEC_PER_SEC - remainder);
-				end = start + (u64)NSEC_PER_SEC / 5;
+				end = start + (u64)NSEC_PER_SEC / 2;
 				start &= E1000_TMAX;
 				adapter->ptp_pps_start = start;
 				end &= E1000_TMAX;
@@ -675,6 +657,42 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 	struct timespec ts;
 
 	switch(rq->type) {
+		
+		case PTP_CLK_REQ_EXTTS:
+			   
+			if(rq->extts.flags & PTP_ENABLE_FEATURE) {
+				// 1 
+				regval = E1000_READ_REG(hw, E1000_TSSDP);
+				regval |= E1000_TS_SDP_AUX1(1) | E1000_TS_SDP_AUX1_EN;
+				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
+				// 2 
+				regval = E1000_READ_REG(hw, E1000_CTRL);
+				regval &= ~( E1000_TS_SDP1_DIR(1) );
+				E1000_WRITE_REG(hw, E1000_CTRL, regval);
+				E1000_WRITE_FLUSH(hw); 
+				// 3 
+	     			regval = E1000_READ_REG(hw, E1000_TSAUXC);
+				regval |= (E1000_TSAUXC_EN_TS1);
+				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
+
+				// enable interrupts 
+				regval = E1000_READ_REG(hw, E1000_TSIM);
+				regval |= (E1000_TSIM_AUTT1);
+				E1000_WRITE_REG(hw, E1000_TSIM, regval);
+				E1000_WRITE_FLUSH(hw); 
+			}
+			else {
+				regval = E1000_READ_REG(hw, E1000_TSAUXC);
+				regval &= ~(E1000_TSAUXC_EN_TS1);
+				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
+
+				regval = E1000_READ_REG(hw, E1000_TSIM);
+				regval &= ~(E1000_TSIM_AUTT1);
+				E1000_WRITE_REG(hw, E1000_TSIM, regval);
+
+				E1000_WRITE_FLUSH(hw);
+			}
+		break;
 		case PTP_CLK_REQ_PEROUT:
 
 			/* If the period length is zero, disable the output and return */
