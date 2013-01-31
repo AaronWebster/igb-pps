@@ -42,7 +42,6 @@ static void usage(char *progname)
 		" -p 1/0                 enable/disable PPS\n"
 		" -P [channel, period]   enable periodic output\n"
 		"                        0 period time disables the output\n"
-		" -e 1/0		 enable external timestamping\n"
 		"\n",
 		progname);
 }
@@ -50,15 +49,14 @@ static void usage(char *progname)
 int main(int argc, char *argv[])
 {
 	char *device = NULL, *progname;
-	int c, err, fd, ppsen = 0, ppsel = 0, per_sel = 0, per_channel = 0, per_period = 0, exttsen = 0, exttsel = 0;
+	int c, err, fd, ppsen = 0, ppsel = 0, per_sel = 0, per_channel = 0, per_period = 0;
 	struct ptp_perout_request perout;
-	struct ptp_extts_request extts;
 
 
 	/* Process the command line arguments. */
 	progname = strrchr(argv[0], '/');
 	progname = progname ? 1+progname : argv[0];
-	while (EOF != (c = getopt(argc, argv, "hd:p:P:e:"))) {
+	while (EOF != (c = getopt(argc, argv, "hd:p:P:"))) {
 		switch (c) {
 		case 'd':
 			device = optarg;
@@ -72,10 +70,6 @@ int main(int argc, char *argv[])
 			per_channel = strtol(optarg, &optarg, 0);
 			if (optarg[0])
 				per_period = strtol(optarg + 1, 0, 0);
-			break;
-		case 'e':
-			exttsel = 1;
-			exttsen = atoi(optarg);
 			break;
 		case 'h':
 			usage(progname);
@@ -126,19 +120,6 @@ int main(int argc, char *argv[])
 		printf("PPS %s\n",ppsen?"enabled":"disabled");
 	}
 	
-	if(exttsel) {
-		
-		memset(&perout, 0, sizeof(extts));
-		extts.index   = 0;
-		extts.flags  = PTP_RISING_EDGE | (exttsen?PTP_ENABLE_FEATURE:0);
-
-		err = ioctl(fd, PTP_EXTTS_REQUEST, &extts);
-		if (err < 0){
-			perror("PTP_EXTTS_REQUEST failed");
-			return err ? errno : 0;
-		}
-		printf("External timestamping %s\n",exttsen?"enabled":"disabled");
-	}
 
 	return 0;
 }

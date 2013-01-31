@@ -1066,23 +1066,23 @@
 
 #define E1000_TS_SDP0_SEL(a)   	((a)<<6) /* select SDP pin for CLK/TT[01] */
 #define E1000_TS_SDP0_EN 	(1<<8)
-#define E1000_TS_SDP0_DATA(a)	((a)<<18) /* select SDP0 data */
-#define E1000_TS_SDP0_DIR(a)	((a)<<22) /* select SDP0 direction (1 - out / 0 - in) */
+#define E1000_TS_SDP0_DATA	(1<<18) /* select SDP0 data */
+#define E1000_TS_SDP0_DIR	(1<<22) /* select SDP0 direction (1 - out / 0 - in) */
 
 #define E1000_TS_SDP1_SEL(a)   	((a) << 9) /* select SDP pin for CLK/TT[01] */
 #define E1000_TS_SDP1_EN 	(1<<11)
-#define E1000_TS_SDP1_DATA(a)	((a)<<19) /* select SDP1 data */
-#define E1000_TS_SDP1_DIR(a)	((a)<<23) /* select SDP1 direction (1 - out / 0 - in) */
+#define E1000_TS_SDP1_DATA	(1<<19) /* select SDP1 data */
+#define E1000_TS_SDP1_DIR	(1<<23) /* select SDP1 direction (1 - out / 0 - in) */
 
 #define E1000_TS_SDP2_SEL(a)   	((a) << 12) /* select SDP pin for CLK/TT[01] */
 #define E1000_TS_SDP2_EN 	(1<<14)
-#define E1000_TS_SDP2_DATA(a)	((a)<<6) /* select SDP2 data */
-#define E1000_TS_SDP2_DIR(a)	((a)<<10) /* select SDP2 direction (1 - out / 0 - in) */
+#define E1000_TS_SDP2_DATA	(1<<6) /* select SDP2 data */
+#define E1000_TS_SDP2_DIR	(1<<10) /* select SDP2 direction (1 - out / 0 - in) */
 
 #define E1000_TS_SDP3_SEL(a)   	((a) << 15) /* select SDP pin for CLK/TT[01] */
 #define E1000_TS_SDP3_EN 	(1<<17)
-#define E1000_TS_SDP3_DIR(a)	((a)<<11) /* select SDP3 direction (1 - out / 0 - in) */
-#define E1000_TS_SDP3_DATA(a)	((a)<<7) /* select SDP3 data */
+#define E1000_TS_SDP3_DIR	(1<<11) /* select SDP3 direction (1 - out / 0 - in) */
+#define E1000_TS_SDP3_DATA	(1<<7) /* select SDP3 data */
 
 #define E1000_TS_SDP_AUX0(a)	((a)<<0)
 #define E1000_TS_SDP_AUX0_EN	(1<<2)

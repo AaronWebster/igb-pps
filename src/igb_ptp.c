@@ -28,6 +28,8 @@
 /******************************************************************************
  Copyright(c) 2011 Richard Cochran <richardcochran@gmail.com> for some of the
  82576 and 82580 code
+ Copyright(c) 2013 Balint Ferencz <fernya@sch.bme.hu> for some of the i350 and
+ i210 clock features code
 ******************************************************************************/
 
 #include "igb.h"
@@ -400,11 +402,16 @@ void igb_ptp_extts_work(struct work_struct *work)
 	struct igb_adapter * adapter = container_of(work, struct igb_adapter, ptp_extts_work);
 	struct e1000_hw *hw = &adapter->hw;
 	struct ptp_clock_event event;
+	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
+
 	/* prepare PPS event */
-	event.type = PTP_CLOCK_EXTTS;
-	event.index = 0;
 	event.timestamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
 	event.timestamp += E1000_READ_REG(hw, E1000_AUXSTMPH1) * NSEC_PER_SEC;
+	if(!(regval & E1000_TS_SDP1_DATA)) {
+		return;
+	}
+	event.type = PTP_CLOCK_EXTTS;
+	event.index = 0;
 	/* fire event */
 	ptp_clock_event(adapter->ptp_clock, &event);
 }
@@ -487,7 +494,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				// 2 
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval &= ~( E1000_TS_SDP1_DIR(1) );
+				regval &= ~( E1000_TS_SDP1_DIR );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 				E1000_WRITE_FLUSH(hw); 
 				// 3 
@@ -542,7 +549,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 			E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 			/* Set SDP1 to output */
 			regval = E1000_READ_REG(hw, E1000_CTRL);
-			regval |= ( E1000_TS_SDP0_DIR(1) );
+			regval |= ( E1000_TS_SDP0_DIR );
 			E1000_WRITE_REG(hw, E1000_CTRL, regval);
 			/* SDP2-3 enabling is different */
 			/*regval = E1000_READ_REG(hw, E1000_CTRL_EXT);
@@ -588,7 +595,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				/* 2 */
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval |= ( E1000_TS_SDP0_DIR(1)  );
+				regval |= ( E1000_TS_SDP0_DIR  );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 				/* 3 */
 				regval = E1000_READ_REG(hw, E1000_TSAUXC);
@@ -667,7 +674,7 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				// 2 
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval &= ~( E1000_TS_SDP1_DIR(1) );
+				regval &= ~( E1000_TS_SDP1_DIR );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 				E1000_WRITE_FLUSH(hw); 
 				// 3 
@@ -725,7 +732,7 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 			E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 			/* Set SDP1 to output */
 			regval = E1000_READ_REG(hw, E1000_CTRL);
-			regval |= ( E1000_TS_SDP0_DIR(1) );
+			regval |= ( E1000_TS_SDP0_DIR );
 			E1000_WRITE_REG(hw, E1000_CTRL, regval);
 			/* SDP2-3 enabling is different
 			   regval = E1000_READ_REG(hw, E1000_CTRL_EXT);
@@ -766,7 +773,7 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				/* Set SDP1 to output */
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval |= ( E1000_TS_SDP0_DIR(1) );
+				regval |= ( E1000_TS_SDP0_DIR );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 				/* SDP2-3 enabling is different
 				   regval = E1000_READ_REG(hw, E1000_CTRL_EXT);
