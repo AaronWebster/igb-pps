@@ -5169,9 +5169,9 @@ static irqreturn_t igb_msix_other(int irq, void *data)
 	if (icr & E1000_ICR_TS) {
 		u32 tsicr = E1000_READ_REG(hw, E1000_TSICR);
 
-		if(tsicr & E1000_TSICR_TT1) {
+		if(tsicr & E1000_TSICR_TT0) {
 			/* acknowledge the interrupt */
-			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_TT1);
+			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_TT0);
 			/* process the external event */
 			schedule_work(&adapter->ptp_pps_work);
 			schedule_work(&adapter->ptp_fire_pps_event_work);
