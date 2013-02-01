@@ -430,7 +430,7 @@ void igb_ptp_extts_work_i350(struct work_struct *work)
 	u64 stamp;
 	/* prepare external timestamp event */
 	stamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
-	stamp = E1000_READ_REG(hw, E1000_AUXSTMPH1) << 32;
+	stamp = (u64)E1000_READ_REG(hw, E1000_AUXSTMPH1) << 32;
 	event.timestamp = timecounter_cyc2time(&adapter->tc, stamp);
 
 	if(!(regval & E1000_TS_SDP1_DATA)) {
@@ -492,7 +492,7 @@ void igb_ptp_fire_pps_event_i350(struct work_struct *work)
 	}
 	event.type = PTP_CLOCK_PPS;
 	event.index = 0;
-	ns2timespec(ns, &event.pps_time.ts_raw);
+	event.timestamp = stamp;
 	/* fire PPS event */
 	ptp_clock_event(adapter->ptp_clock, &event);
 }
