@@ -15,13 +15,14 @@ outputting signals to the connected devices (e.g. PPS signal from a PTP slave).
 The pins can be assigned to every function, one at a time.  The source code has
 the following mappings:
 
-  * SDP0 - PPS output / frequency synthesizer output SDP1 - external time
-  * stamping input
+  * SDP0 - PPS output / frequency synthesizer output
+  * SDP1 - external time stamping input
 
 One can easily remap them with the modification of the respective ptp\_enable
 functions, the necessary code snippets are well commented.
 
 WARNING: The multi port i350 adapters have independent local clocks per port!
+
 WARNING: Never connect TTL level signal source to the pins of the adapter!
 
 ##Requirements
@@ -31,12 +32,15 @@ WARNING: Never connect TTL level signal source to the pins of the adapter!
 
 ##Installation
 
-  - checkout the source code by issuing git clone
-    https://fernya@bitbucket.org/fernya/igb-pps.git
-  - compile the perpps and ts2phc utilities (run 'make' in their subdirectories)
-  - compile and install the source code of the driver (run 'make install' in the
-    src subdirectory)
-  - unload & load the current driver ('rmmod igb && modprobe igb')
+  1. checkout the source code by issuing git clone
+
+	https://fernya@bitbucket.org/fernya/igb-pps.git
+
+  1. compile the perpps and ts2phc utilities (run 'make' in their
+subdirectories)
+  1. compile and install the source code of the driver (run 'make install' in
+the src subdirectory)
+  1. unload & load the current driver ('rmmod igb && modprobe igb')
 
 If no error messages displayed, you're done!
 
