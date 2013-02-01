@@ -457,7 +457,7 @@ void igb_ptp_fire_pps_event_i350(struct work_struct *work)
 	struct igb_adapter * adapter = container_of(work, struct igb_adapter, ptp_fire_pps_event_work);
 	struct ptp_clock_event event;
 	struct e1000_hw *hw = &adapter->hw;
-	u32 regval = E1000_READ_REG(hw, E1000_CTRL_EXT); 
+	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
 	/* prepare PPS event */
 	if(!(regval & E1000_TS_SDP0_DATA)) {
 		return;
