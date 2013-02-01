@@ -4,6 +4,7 @@ This software implements the necessary clock sync services needed for high
 quality clock synchronization.
 
 ##Main features
+
   * clock synthesizer outputs (works on 82580, i350, i210 series)
   * Pulse Per Second outputs (i350, i210)
   * external event timestamping (i350, i210)
@@ -13,8 +14,10 @@ used for reading events from the environment (such as PPS signal of a GPS) or
 outputting signals to the connected devices (e.g. PPS signal from a PTP slave).
 The pins can be assigned to every function, one at a time.  The source code has
 the following mappings:
+
   * SDP0 - PPS output / frequency synthesizer output SDP1 - external time
   * stamping input
+
 One can easily remap them with the modification of the respective ptp\_enable
 functions, the necessary code snippets are well commented.
 
