@@ -428,22 +428,18 @@ void igb_ptp_pps_work_i350(struct work_struct *work)
 			ptp_pps_work);
 	struct e1000_hw *hw = &adapter->hw;
 	u32 regval;
-	unsigned long flags, start, end;
+	unsigned long flags, start;
 
-	start = adapter->ptp_pps_start + (u64)NSEC_PER_SEC;
-	end = start + (u64)NSEC_PER_SEC / 2;
+	start = adapter->ptp_pps_start + (u64)NSEC_PER_SEC / 2;
 	start &= E1000_TMAX;
 	adapter->ptp_pps_start = start;
-	end &= E1000_TMAX;
 
 	spin_lock_irqsave(&adapter->tmreg_lock,flags);
 	E1000_WRITE_REG(hw, E1000_TRGTTIML0, lower_32_bits(start));
 	E1000_WRITE_REG(hw, E1000_TRGTTIMH0, upper_32_bits(start));
-	E1000_WRITE_REG(hw, E1000_TRGTTIML1, lower_32_bits(end));
-	E1000_WRITE_REG(hw, E1000_TRGTTIMH1, upper_32_bits(end));
 
 	regval = E1000_READ_REG(hw, E1000_TSAUXC);
-	regval |= (E1000_TSAUXC_EN_TT0 | E1000_TSAUXC_EN_TT1);
+	regval |= (E1000_TSAUXC_EN_TT0);
 	E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 	E1000_WRITE_FLUSH(hw); 
 	spin_unlock_irqrestore(&adapter->tmreg_lock,flags);
@@ -460,7 +456,12 @@ void igb_ptp_fire_pps_event_i350(struct work_struct *work)
 {
 	struct igb_adapter * adapter = container_of(work, struct igb_adapter, ptp_fire_pps_event_work);
 	struct ptp_clock_event event;
+	struct e1000_hw *hw = &adapter->hw;
+	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
 	/* prepare PPS event */
+	if(!(regval & E1000_TS_SDP0_DATA)) {
+		return;
+	}
 	event.type = PTP_CLOCK_PPS;
 	event.index = 0;
 	event.timestamp = timecounter_read(&adapter->tc);
@@ -480,7 +481,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 	struct igb_adapter * adapter = container_of(ptp, struct igb_adapter, ptp_caps);
 	struct e1000_hw * hw = &adapter->hw;
 	u32 regval, remainder = 0;
-	unsigned long flags, start, end;
+	unsigned long flags, start;
 	u64 cc, stamp = 0;
 
 
@@ -597,10 +598,6 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				regval = E1000_READ_REG(hw, E1000_CTRL);
 				regval |= ( E1000_TS_SDP0_DIR  );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
-				/* 3 */
-				regval = E1000_READ_REG(hw, E1000_TSAUXC);
-				regval |= (E1000_TSAUXC_PLSG0);
-				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 
 				spin_lock_irqsave(&adapter->tmreg_lock,flags);
 				cc = igb_ptp_read_82580(&adapter->cc);
@@ -609,28 +606,23 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				/*first timer value = remaining time to the 2nd 
 				  subsequent second minus correction */
 				start = (cc + 2*(u64)NSEC_PER_SEC - remainder);
-				end = start + (u64)NSEC_PER_SEC / 2;
 				start &= E1000_TMAX;
 				adapter->ptp_pps_start = start;
-				end &= E1000_TMAX;
 
 				/* 5 */
 				E1000_WRITE_REG(hw, E1000_TRGTTIML0, lower_32_bits(start));
 				E1000_WRITE_REG(hw, E1000_TRGTTIMH0, upper_32_bits(start));
-				E1000_WRITE_REG(hw, E1000_TRGTTIML1, lower_32_bits(end));
-				E1000_WRITE_REG(hw, E1000_TRGTTIMH1, upper_32_bits(end));
-
 				E1000_WRITE_FLUSH(hw); 
 				spin_unlock_irqrestore(&adapter->tmreg_lock,flags);
 				/* 6 */
 				regval = E1000_READ_REG(hw, E1000_TSAUXC);
-				regval |= (E1000_TSAUXC_EN_TT0 | E1000_TSAUXC_EN_TT1);
+				regval |= (E1000_TSAUXC_EN_TT0) ;
 				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 				E1000_WRITE_FLUSH(hw); 
 
 				/* enable interrupts */
 				regval = E1000_READ_REG(hw, E1000_TSIM);
-				regval |= (E1000_TSIM_TT0 | E1000_TSIM_TT1);
+				regval |= (E1000_TSIM_TT0);
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 				E1000_WRITE_FLUSH(hw); 
 			}
@@ -638,11 +630,11 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				/* disable TT0 & TT1 */
 
 				regval = E1000_READ_REG(hw, E1000_TSAUXC);
-				regval &= ~(E1000_TSAUXC_EN_TT0 | E1000_TSAUXC_EN_TT1);
+				regval &= ~(E1000_TSAUXC_EN_TT0);
 				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 				/* disable TT0 & TT1 IT */
 				regval = E1000_READ_REG(hw, E1000_TSIM);
-				regval &= ~(E1000_TSIM_TT0 | E1000_TSIM_TT1);
+				regval &= ~(E1000_TSIM_TT0);
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 
 				E1000_WRITE_FLUSH(hw);
@@ -859,14 +851,10 @@ static void igb_ptp_overflow_check(struct work_struct *work)
 		container_of(work, struct igb_adapter, ptp_overflow_work.work);
 	struct timespec ts;
 
-	cancel_work_sync(&igb->ptp_pps_work);
-	cancel_work_sync(&igb->ptp_fire_pps_event_work);
 	igb->ptp_caps.gettime(&igb->ptp_caps, &ts);
 
 	pr_debug("igb overflow check at %ld.%09lu\n", ts.tv_sec, ts.tv_nsec);
 
-	schedule_work(&igb->ptp_pps_work);
-	schedule_work(&igb->ptp_fire_pps_event_work);
 	schedule_delayed_work(&igb->ptp_overflow_work,
 			IGB_SYSTIM_OVERFLOW_PERIOD);
 }
