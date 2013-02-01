@@ -392,21 +392,47 @@ static int igb_ptp_settime_i210(struct ptp_clock_info *ptp,
 
 
 /**
- * igb_ptp_extts_work
+ * igb_ptp_extts_work_i210
  * @work: pointer to work struct
  *
  * This work function resets the PPS output registers.
  */
-void igb_ptp_extts_work(struct work_struct *work)
+void igb_ptp_extts_work_i210(struct work_struct *work)
 {
 	struct igb_adapter * adapter = container_of(work, struct igb_adapter, ptp_extts_work);
 	struct e1000_hw *hw = &adapter->hw;
 	struct ptp_clock_event event;
 	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
-
-	/* prepare PPS event */
+	/* prepare external stamp event */
 	event.timestamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
 	event.timestamp += E1000_READ_REG(hw, E1000_AUXSTMPH1) * NSEC_PER_SEC;
+
+	if(!(regval & E1000_TS_SDP1_DATA)) {
+		return;
+	}
+	event.type = PTP_CLOCK_EXTTS;
+	event.index = 0;
+	/* fire event */
+	ptp_clock_event(adapter->ptp_clock, &event);
+}
+/**
+ * igb_ptp_extts_work_i350
+ * @work: pointer to work struct
+ *
+ * This work function resets the PPS output registers.
+ */
+void igb_ptp_extts_work_i350(struct work_struct *work)
+{
+	struct igb_adapter * adapter = container_of(work, struct igb_adapter, ptp_extts_work);
+	struct e1000_hw *hw = &adapter->hw;
+	struct ptp_clock_event event;
+	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
+	u64 stamp;
+	/* prepare external timestamp event */
+	stamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
+	stamp = E1000_READ_REG(hw, E1000_AUXSTMPH1) << 32;
+	event.timestamp = timecounter_cyc2time(&adapter->tc, stamp);
+
 	if(!(regval & E1000_TS_SDP1_DATA)) {
 		return;
 	}
@@ -458,13 +484,15 @@ void igb_ptp_fire_pps_event_i350(struct work_struct *work)
 	struct ptp_clock_event event;
 	struct e1000_hw *hw = &adapter->hw;
 	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
+	s64 stamp = timecounter_read(&adapter->tc);
+
 	/* prepare PPS event */
 	if(!(regval & E1000_TS_SDP0_DATA)) {
 		return;
 	}
 	event.type = PTP_CLOCK_PPS;
 	event.index = 0;
-	event.timestamp = timecounter_read(&adapter->tc);
+	ns2timespec(ns, &event.pps_time.ts_raw);
 	/* fire PPS event */
 	ptp_clock_event(adapter->ptp_clock, &event);
 }
@@ -1146,6 +1174,7 @@ void igb_ptp_init(struct igb_adapter *adapter)
 				igb_ptp_fire_pps_event_i350);
 		INIT_WORK(&adapter->ptp_pps_work,
 				igb_ptp_pps_work_i350);
+		INIT_WORK(&adapter->ptp_extts_work, igb_ptp_extts_work_i350);	
 		break;
 	case e1000_i210:
 	case e1000_i211:
@@ -1162,6 +1191,7 @@ void igb_ptp_init(struct igb_adapter *adapter)
 		adapter->ptp_caps.enable = igb_ptp_enable_i210;
 		/* Enable the timer functions by clearing bit 31. */
 		E1000_WRITE_REG(hw, E1000_TSAUXC, 0x0);
+		INIT_WORK(&adapter->ptp_extts_work, igb_ptp_extts_work_i210);	
 		break;
 	default:
 		adapter->ptp_clock = NULL;
@@ -1170,7 +1200,6 @@ void igb_ptp_init(struct igb_adapter *adapter)
 
 	spin_lock_init(&adapter->tmreg_lock);
 	INIT_WORK(&adapter->ptp_tx_work, igb_ptp_tx_work);
-	INIT_WORK(&adapter->ptp_extts_work, igb_ptp_extts_work);	
 	/* Initialize the clock and overflow work for devices that need it. */
 	if ((hw->mac.type == e1000_i210) || (hw->mac.type == e1000_i211)) {
 		struct timespec ts = ktime_to_timespec(ktime_get_real());
