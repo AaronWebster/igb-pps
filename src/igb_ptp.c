@@ -473,6 +473,25 @@ void igb_ptp_pps_work_i350(struct work_struct *work)
 
 
 /**
+ * igb_ptp_fire_pps_event_i210
+ * @work: pointer to work struct
+ *
+ * This work function resets the PPS output registers.
+ */
+void igb_ptp_fire_pps_event_i210(struct work_struct *work)
+{
+	struct igb_adapter * adapter = container_of(work, struct igb_adapter, ptp_fire_pps_event_work);
+	struct ptp_clock_event event;
+	struct timespec ts;
+
+	adapter->ptp_caps.gettime(&adapter->ptp_caps, &ts);
+	event.type = PTP_CLOCK_PPS;
+	event.index = 0;
+	event.timestamp = timespec_to_ns(&ts);
+	/* fire PPS event */
+	ptp_clock_event(adapter->ptp_clock, &event);
+}
+/**
  * igb_ptp_fire_pps_event_i350
  * @work: pointer to work struct
  *
@@ -484,7 +503,9 @@ void igb_ptp_fire_pps_event_i350(struct work_struct *work)
 	struct ptp_clock_event event;
 	struct e1000_hw *hw = &adapter->hw;
 	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
-	s64 stamp = timecounter_read(&adapter->tc);
+	struct timespec ts;
+
+	adapter->ptp_caps.gettime(&adapter->ptp_caps, &ts);
 
 	/* prepare PPS event */
 	if(!(regval & E1000_TS_SDP0_DATA)) {
@@ -492,7 +513,7 @@ void igb_ptp_fire_pps_event_i350(struct work_struct *work)
 	}
 	event.type = PTP_CLOCK_PPS;
 	event.index = 0;
-	event.timestamp = stamp;
+	event.timestamp = timespec_to_ns(&ts);
 	/* fire PPS event */
 	ptp_clock_event(adapter->ptp_clock, &event);
 }
@@ -814,7 +835,7 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 
 				/* enable interrupts */
 				regval = E1000_READ_REG(hw, E1000_TSIM);
-				regval |= E1000_TSIM_TT0;
+				regval |= (E1000_TSIM_SYSWARP);
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 				E1000_WRITE_FLUSH(hw); 
 				
@@ -1192,6 +1213,8 @@ void igb_ptp_init(struct igb_adapter *adapter)
 		/* Enable the timer functions by clearing bit 31. */
 		E1000_WRITE_REG(hw, E1000_TSAUXC, 0x0);
 		INIT_WORK(&adapter->ptp_extts_work, igb_ptp_extts_work_i210);	
+		INIT_WORK(&adapter->ptp_fire_pps_event_work,
+				igb_ptp_fire_pps_event_i210);
 		break;
 	default:
 		adapter->ptp_clock = NULL;
@@ -1250,7 +1273,6 @@ void igb_ptp_stop(struct igb_adapter *adapter)
 	case e1000_i350:
 		cancel_delayed_work_sync(&adapter->ptp_overflow_work);
 		cancel_work_sync(&adapter->ptp_pps_work);
-		cancel_work_sync(&adapter->ptp_fire_pps_event_work);
 		break;
 	case e1000_i210:
 	case e1000_i211:
@@ -1262,7 +1284,8 @@ void igb_ptp_stop(struct igb_adapter *adapter)
 
 	cancel_work_sync(&adapter->ptp_tx_work);
 	cancel_work_sync(&adapter->ptp_extts_work);
-
+	cancel_work_sync(&adapter->ptp_fire_pps_event_work);
+	
 	if (adapter->ptp_clock) {
 		ptp_clock_unregister(adapter->ptp_clock);
 		dev_info(&adapter->pdev->dev, "removed PHC on %s\n",

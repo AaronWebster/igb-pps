@@ -5170,10 +5170,19 @@ static irqreturn_t igb_msix_other(int irq, void *data)
 		u32 tsicr = E1000_READ_REG(hw, E1000_TSICR);
 
 		if(tsicr & E1000_TSICR_TT0) {
-			/* acknowledge the interrupt */
+			/* enabled only on i350!
+			   acknowledge the interrupt */
 			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_TT0);
 			/* process the pps event */
-			schedule_work(&adapter->ptp_pps_work);
+			if(hw->mac.type == e1000_i350) schedule_work(&adapter->ptp_pps_work);
+			schedule_work(&adapter->ptp_fire_pps_event_work);
+		}
+
+		if(tsicr & E1000_TSICR_SYSWARP) {
+			/* enabled only on i210!
+			 * acknowledge the interrupt */
+			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_SYSWARP);
+			/* process the pps event */
 			schedule_work(&adapter->ptp_fire_pps_event_work);
 		}
 
