@@ -233,7 +233,7 @@ IGB_PARAM(QueuePairs, "Enable Tx/Rx queue pairs for interrupt handling (0,1), de
  */
  IGB_PARAM(PPS_COMP, "PPS output compensation (in nsecs), default 0");
 #define DEFAULT_PPS_COMP	0
-#define MAX_PPS_COMP		100000000
+#define MAX_PPS_COMP		1000000
 #define MIN_PPS_COMP		0 
 
 #endif
@@ -851,7 +851,7 @@ void __devinit igb_check_options(struct igb_adapter *adapter)
 #ifdef CONFIG_IGB_PTP
 	{ /* PPS compensation */
 		struct igb_option opt = {
-			.type = enable_option,
+			.type = range_option,
 			.name = "Select PPS compensation in nsecs (0 - 1e9)",
 			.err  = "defaulting to 0",
 			.def  = DEFAULT_PPS_COMP,

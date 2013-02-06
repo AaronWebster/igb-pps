@@ -614,7 +614,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 			cc = igb_ptp_read_82580(&adapter->cc);
 			stamp = timecounter_cyc2time(&adapter->tc, cc);
 			div_s64_rem(stamp,NSEC_PER_SEC,&remainder);
-			cc += 2 * (u64)NSEC_PER_SEC - remainder;
+			cc += 2 * (u64)NSEC_PER_SEC - remainder - adapter->pps_delay;
 			cc &= E1000_TMAX;
 			spin_unlock_irqrestore(&adapter->tmreg_lock, flags);
 			E1000_WRITE_REG(hw, E1000_TRGTTIML0, lower_32_bits(cc));
@@ -654,7 +654,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				div_s64_rem(stamp,NSEC_PER_SEC,&remainder);
 				/*first timer value = remaining time to the 2nd 
 				  subsequent second minus correction */
-				start = (cc + 2*(u64)NSEC_PER_SEC - remainder);
+				start = (cc + 2*(u64)NSEC_PER_SEC - remainder - adapter->pps_delay);
 				start &= E1000_TMAX;
 				adapter->ptp_pps_start = start;
 
