@@ -15,15 +15,14 @@ outputting signals to the connected devices (e.g. PPS signal from a PTP slave).
 The pins can be assigned to every function, one at a time.  The source code has
 the following mappings:
 
-  * SDP0 - PPS output / frequency synthesizer output
-  * SDP1 - external time stamping input
+  * SDP0 - external time stamping input
+  * SDP1 - PPS output / frequency synthesizer output
 
 One can easily remap them with the modification of the respective ptp\_enable
-functions, the necessary code snippets are well commented.
+functions, the necessary code snippets are marked.
+Please note that the multi port i350 adapters have independent local clocks per port!
 
-WARNING: The multi port i350 adapters have independent local clocks per port!
-
-WARNING: Never connect TTL level signal source to the pins of the adapter!
+WARNING: Never connect 5V level signal source to the pins of the adapter!
 
 ##Requirements
 
@@ -50,11 +49,18 @@ To exploit the enabled functionality two utilities are included in this release.
 
 The 'perpps' utility selects the desired output frequency, and enables the
 PPS/synthesizer outputs of the cards. A common use case is the validation of the
-synchronization system, it works on PTP master and slave devices too.
+synchronization system, it works on PTP master and slave devices too. Please
+note that the outputs should be enabled in synchronized state (when the clock
+is slewed to the referece)!
+
+example: sudo ./perpps -d /dev/ptp0 -p 1
+
 
 The 'ts2phc' utility programs the adapter to receive the external timestamp
 events. The program reads the timestamps, and corrects the local clock of the
 adapter. It currently works properly with PPS signals only (the driver detects
 the rising edges at the start of the second).
+
+example: sudo ./ts2phc -d /dev/ptp0
 
 Both utilities have help messages when they are invoked without parameters.

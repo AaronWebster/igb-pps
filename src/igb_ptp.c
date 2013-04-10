@@ -404,10 +404,10 @@ void igb_ptp_extts_work_i210(struct work_struct *work)
 	struct ptp_clock_event event;
 	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
 	/* prepare external stamp event */
-	event.timestamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
-	event.timestamp += E1000_READ_REG(hw, E1000_AUXSTMPH1) * NSEC_PER_SEC;
+	event.timestamp = E1000_READ_REG(hw, E1000_AUXSTMPL0);
+	event.timestamp += E1000_READ_REG(hw, E1000_AUXSTMPH0) * NSEC_PER_SEC;
 
-	if(!(regval & E1000_TS_SDP1_DATA)) {
+	if(!(regval & E1000_TS_SDP0_DATA)) {
 		return;
 	}
 	event.type = PTP_CLOCK_EXTTS;
@@ -429,11 +429,11 @@ void igb_ptp_extts_work_i350(struct work_struct *work)
 	u32 regval = E1000_READ_REG(hw, E1000_CTRL); 
 	u64 stamp;
 	/* prepare external timestamp event */
-	stamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
-	stamp |= (u64)E1000_READ_REG(hw, E1000_AUXSTMPH1) << 32;
+	stamp = E1000_READ_REG(hw, E1000_AUXSTMPL0);
+	stamp |= (u64)E1000_READ_REG(hw, E1000_AUXSTMPH0) << 32;
 	event.timestamp = timecounter_cyc2time(&adapter->tc, stamp);
 
-	if(!(regval & E1000_TS_SDP1_DATA)) {
+	if(!(regval & E1000_TS_SDP0_DATA)) {
 		return;
 	}
 	event.type = PTP_CLOCK_EXTTS;
@@ -540,31 +540,31 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 			if(rq->extts.flags & PTP_ENABLE_FEATURE) {
 				// 1 
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
-				regval |= E1000_TS_SDP_AUX1(1) | E1000_TS_SDP_AUX1_EN;
+				regval |= E1000_TS_SDP_AUX0(0) | E1000_TS_SDP_AUX0_EN;
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				// 2 
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval &= ~( E1000_TS_SDP1_DIR );
+				regval &= ~( E1000_TS_SDP0_DIR );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 				E1000_WRITE_FLUSH(hw); 
 				// 3 
 	     			regval = E1000_READ_REG(hw, E1000_TSAUXC);
-				regval |= (E1000_TSAUXC_EN_TS1);
+				regval |= (E1000_TSAUXC_EN_TS0);
 				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 
 				// enable interrupts 
 				regval = E1000_READ_REG(hw, E1000_TSIM);
-				regval |= (E1000_TSIM_AUTT1);
+				regval |= (E1000_TSIM_AUTT0);
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 				E1000_WRITE_FLUSH(hw); 
 			}
 			else {
 				regval = E1000_READ_REG(hw, E1000_TSAUXC);
-				regval &= ~(E1000_TSAUXC_EN_TS1);
+				regval &= ~(E1000_TSAUXC_EN_TS0);
 				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 
 				regval = E1000_READ_REG(hw, E1000_TSIM);
-				regval &= ~(E1000_TSIM_AUTT1);
+				regval &= ~(E1000_TSIM_AUTT0);
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 
 				E1000_WRITE_FLUSH(hw);
@@ -595,11 +595,11 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 			
 			/* Map SDP1 to FREQOUT0 */
 			regval = E1000_READ_REG(hw, E1000_TSSDP);
-			regval |= E1000_TS_SDP0_SEL(2) | E1000_TS_SDP0_EN;
+			regval |= E1000_TS_SDP1_SEL(2) | E1000_TS_SDP1_EN;
 			E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 			/* Set SDP1 to output */
 			regval = E1000_READ_REG(hw, E1000_CTRL);
-			regval |= ( E1000_TS_SDP0_DIR );
+			regval |= ( E1000_TS_SDP1_DIR );
 			E1000_WRITE_REG(hw, E1000_CTRL, regval);
 			/* SDP2-3 enabling is different */
 			/*regval = E1000_READ_REG(hw, E1000_CTRL_EXT);
@@ -641,11 +641,11 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				/* SYSTIM Synchronixed Pulse Generation on SDP Pins (7.9.4.1.2) */
 				/* 1 */
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
-				regval |= E1000_TS_SDP0_SEL(0) | E1000_TS_SDP0_EN;
+				regval |= E1000_TS_SDP1_SEL(0) | E1000_TS_SDP1_EN;
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				/* 2 */
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval |= ( E1000_TS_SDP0_DIR  );
+				regval |= ( E1000_TS_SDP1_DIR  );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 
 				spin_lock_irqsave(&adapter->tmreg_lock,flags);
@@ -711,31 +711,31 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 			if(rq->extts.flags & PTP_ENABLE_FEATURE) {
 				// 1 
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
-				regval |= E1000_TS_SDP_AUX1(1) | E1000_TS_SDP_AUX1_EN;
+				regval |= E1000_TS_SDP_AUX0(0) | E1000_TS_SDP_AUX0_EN;
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				// 2 
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval &= ~( E1000_TS_SDP1_DIR );
+				regval &= ~( E1000_TS_SDP0_DIR );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 				E1000_WRITE_FLUSH(hw); 
 				// 3 
 	     			regval = E1000_READ_REG(hw, E1000_TSAUXC);
-				regval |= (E1000_TSAUXC_EN_TS1);
+				regval |= (E1000_TSAUXC_EN_TS0);
 				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 
 				// enable interrupts 
 				regval = E1000_READ_REG(hw, E1000_TSIM);
-				regval |= (E1000_TSIM_AUTT1);
+				regval |= (E1000_TSIM_AUTT0);
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 				E1000_WRITE_FLUSH(hw); 
 			}
 			else {
 				regval = E1000_READ_REG(hw, E1000_TSAUXC);
-				regval &= ~(E1000_TSAUXC_EN_TS1);
+				regval &= ~(E1000_TSAUXC_EN_TS0);
 				E1000_WRITE_REG(hw, E1000_TSAUXC, regval);
 
 				regval = E1000_READ_REG(hw, E1000_TSIM);
-				regval &= ~(E1000_TSIM_AUTT1);
+				regval &= ~(E1000_TSIM_AUTT0);
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 
 				E1000_WRITE_FLUSH(hw);
@@ -750,7 +750,7 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 				E1000_WRITE_REG(hw, E1000_TSAUXC, regval); 
 			
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
-				regval &= ~E1000_TS_SDP0_EN;
+				regval &= ~E1000_TS_SDP1_EN;
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				E1000_WRITE_FLUSH(hw);
 			
@@ -769,11 +769,11 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 			
 			/* Map SDP1 to FREQOUT0 */
 			regval = E1000_READ_REG(hw, E1000_TSSDP);
-			regval |= E1000_TS_SDP0_SEL(2) | E1000_TS_SDP0_EN;
+			regval |= E1000_TS_SDP1_SEL(2) | E1000_TS_SDP1_EN;
 			E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 			/* Set SDP1 to output */
 			regval = E1000_READ_REG(hw, E1000_CTRL);
-			regval |= ( E1000_TS_SDP0_DIR );
+			regval |= ( E1000_TS_SDP1_DIR );
 			E1000_WRITE_REG(hw, E1000_CTRL, regval);
 			/* SDP2-3 enabling is different
 			   regval = E1000_READ_REG(hw, E1000_CTRL_EXT);
@@ -810,11 +810,11 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 
 				/* Map SDP1 to FREQOUT0 */
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
-				regval |= E1000_TS_SDP0_SEL(2) | E1000_TS_SDP0_EN;
+				regval |= E1000_TS_SDP1_SEL(2) | E1000_TS_SDP1_EN;
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				/* Set SDP1 to output */
 				regval = E1000_READ_REG(hw, E1000_CTRL);
-				regval |= ( E1000_TS_SDP0_DIR );
+				regval |= ( E1000_TS_SDP1_DIR );
 				E1000_WRITE_REG(hw, E1000_CTRL, regval);
 				/* SDP2-3 enabling is different
 				   regval = E1000_READ_REG(hw, E1000_CTRL_EXT);
@@ -855,7 +855,7 @@ static int igb_ptp_enable_i210(struct ptp_clock_info *ptp,
 				E1000_WRITE_REG(hw, E1000_TSIM, regval);
 
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
-				regval &= ~E1000_TS_SDP0_EN;
+				regval &= ~E1000_TS_SDP1_EN;
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				E1000_WRITE_FLUSH(hw);
 			}

@@ -5186,9 +5186,9 @@ static irqreturn_t igb_msix_other(int irq, void *data)
 			schedule_work(&adapter->ptp_fire_pps_event_work);
 		}
 
-		if(tsicr & E1000_TSICR_AUTT1) {
+		if(tsicr & E1000_TSICR_AUTT0) {
 			/* acknowledge the interrupt */
-			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT1);
+			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT0);
 			/* process the external event */
 			schedule_work(&adapter->ptp_extts_work);
 		}
@@ -6098,9 +6098,9 @@ static irqreturn_t igb_intr_msi(int irq, void *data)
 			schedule_work(&adapter->ptp_fire_pps_event_work);
 		}
 
-		if(tsicr & E1000_TSICR_AUTT1) {
+		if(tsicr & E1000_TSICR_AUTT0) {
 			/* acknowledge the interrupt */
-			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT1);
+			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT0);
 			/* process the external event */
 			schedule_work(&adapter->ptp_extts_work);
 		}
@@ -6167,9 +6167,9 @@ static irqreturn_t igb_intr(int irq, void *data)
 			schedule_work(&adapter->ptp_fire_pps_event_work);
 		}
 
-		if(tsicr & E1000_TSICR_AUTT1) {
+		if(tsicr & E1000_TSICR_AUTT0) {
 			/* acknowledge the interrupt */
-			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT1);
+			E1000_WRITE_REG(hw, E1000_TSICR, E1000_TSICR_AUTT0);
 			/* process the external event */
 			schedule_work(&adapter->ptp_extts_work);
 		}
