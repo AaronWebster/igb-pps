@@ -430,7 +430,7 @@ void igb_ptp_extts_work_i350(struct work_struct *work)
 	u64 stamp;
 	/* prepare external timestamp event */
 	stamp = E1000_READ_REG(hw, E1000_AUXSTMPL1);
-	stamp = (u64)E1000_READ_REG(hw, E1000_AUXSTMPH1) << 32;
+	stamp |= (u64)E1000_READ_REG(hw, E1000_AUXSTMPH1) << 32;
 	event.timestamp = timecounter_cyc2time(&adapter->tc, stamp);
 
 	if(!(regval & E1000_TS_SDP1_DATA)) {
@@ -641,7 +641,7 @@ static int igb_ptp_enable_i350(struct ptp_clock_info *ptp,
 				/* SYSTIM Synchronixed Pulse Generation on SDP Pins (7.9.4.1.2) */
 				/* 1 */
 				regval = E1000_READ_REG(hw, E1000_TSSDP);
-				regval = E1000_TS_SDP0_SEL(0) | E1000_TS_SDP0_EN;
+				regval |= E1000_TS_SDP0_SEL(0) | E1000_TS_SDP0_EN;
 				E1000_WRITE_REG(hw, E1000_TSSDP, regval);
 				/* 2 */
 				regval = E1000_READ_REG(hw, E1000_CTRL);
