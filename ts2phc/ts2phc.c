@@ -30,8 +30,10 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <linux/ptp_clock.h>
+#include <gps.h>
 
 #include "missing.h"
 #define KP 0.7
@@ -40,6 +42,27 @@
 
 #define max_ppb  512000
 #define min_ppb -512000
+
+int phc_fd;
+
+static void quit_handler(int signum)
+{
+	int err;
+	struct ptp_extts_request extts;
+
+	memset(&extts, 0, sizeof(extts));
+	extts.index = 0;
+	extts.flags = 0;
+
+	err = ioctl(phc_fd, PTP_EXTTS_REQUEST, &extts);
+	if (err < 0){
+		perror("PTP_EXTTS_REQUEST failed");
+		exit(EXIT_FAILURE);
+	}
+
+	close(phc_fd);
+	exit(EXIT_SUCCESS);
+}
 
 static clockid_t clock_open(char *device)
 {
@@ -177,11 +200,11 @@ static int do_extts_loop(char *extts_device, double kp, double ki, clockid_t dst
 {
 	int64_t extts_offset;
 	uint64_t extts_ts;
-	int fd, err;
+	int err;
 	struct ptp_extts_request extts;
 
-	fd = open(extts_device, O_RDWR);
-	if (fd < 0) {
+	phc_fd = open(extts_device, O_RDWR);
+	if (phc_fd < 0) {
 		fprintf(stderr, "cannot open '%s': %m\n", extts_device);
 		return -1;
 	}
@@ -190,20 +213,20 @@ static int do_extts_loop(char *extts_device, double kp, double ki, clockid_t dst
 	extts.index   = 0;
 	extts.flags  = PTP_RISING_EDGE | PTP_ENABLE_FEATURE;
 
-	err = ioctl(fd, PTP_EXTTS_REQUEST, &extts);
+	err = ioctl(phc_fd, PTP_EXTTS_REQUEST, &extts);
 	if (err < 0){
 		perror("PTP_EXTTS_REQUEST failed");
 		return err ? errno : 0;
 	}
 
 	while (1) {
-		if (!read_extts(fd, &extts_offset, &extts_ts)) {
+		if (!read_extts(phc_fd, &extts_offset, &extts_ts)) {
 			continue;
 		}
-		do_servo(&servo, FD_TO_CLOCKID(fd), extts_offset, extts_ts, kp, ki);
+		do_servo(&servo, FD_TO_CLOCKID(phc_fd), extts_offset, extts_ts, kp, ki);
 		show_servo(stdout, "extts", extts_offset, extts_ts);
 	}
-	close(fd);
+	close(phc_fd);
 	return 0;
 }
 
@@ -256,6 +279,10 @@ int main(int argc, char *argv[])
 		usage(progname);
 		return -1;
 	}
+
+	signal(SIGTERM, quit_handler);
+	signal(SIGQUIT, quit_handler);
+	signal(SIGINT, quit_handler);
 
 	if (device)
 		return do_extts_loop(device, kp, ki, clock_open(device));
