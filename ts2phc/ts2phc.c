@@ -1,5 +1,5 @@
 /**
- * @file phc2sys.c
+ * @file ts2phc.c
  * @brief Utility program to synchronize the PHC clock to external events 
  * @note Copyright (C) 2013 Balint Ferencz <fernya@sch.bme.hu>
  * @note Based on the phc2sys utility
@@ -31,6 +31,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
+#include <math.h>
 
 #include <linux/ptp_clock.h>
 #include <gps.h>
@@ -44,6 +45,8 @@
 #define min_ppb -512000
 
 int phc_fd;
+uint64_t tai_diff;
+static struct gps_data_t gpsdata;
 
 static void quit_handler(int signum)
 {
@@ -60,6 +63,7 @@ static void quit_handler(int signum)
 		exit(EXIT_FAILURE);
 	}
 
+	gps_close(&gpsdata);
 	close(phc_fd);
 	exit(EXIT_SUCCESS);
 }
@@ -140,12 +144,17 @@ static void do_servo(struct servo *srv, clockid_t dst,
 		     int64_t offset, uint64_t ts, double kp, double ki)
 {
 	double ki_term, ppb;
+	struct timespec tspec;
+
+	tspec.tv_sec = ts / NS_PER_SEC;
+	tspec.tv_nsec = 0;
 
 	switch (srv->state) {
 	case SAMPLE_0:
 		clock_ppb(dst, 0.0);
 		srv->saved_offset = offset;
 		srv->saved_ts = ts;
+		clock_settime(dst, &tspec);
 		srv->state = SAMPLE_1;
 		break;
 	case SAMPLE_1:
@@ -189,7 +198,7 @@ static int read_extts(int fd, int64_t *offset, uint64_t *ts)
 	*ts = event.t.sec * NS_PER_SEC;
 	*ts += event.t.nsec;
 
-	*offset = *ts % (NS_PER_SEC);
+	*offset = *ts % (NS_PER_SEC) - 550;
 	if (*offset > NS_PER_SEC / 2)
 		*offset -= (NS_PER_SEC);
 
@@ -219,11 +228,52 @@ static int do_extts_loop(char *extts_device, double kp, double ki, clockid_t dst
 		return err ? errno : 0;
 	}
 
+
 	while (1) {
 		if (!read_extts(phc_fd, &extts_offset, &extts_ts)) {
 			continue;
 		}
 		do_servo(&servo, FD_TO_CLOCKID(phc_fd), extts_offset, extts_ts, kp, ki);
+		show_servo(stdout, "extts", extts_offset, extts_ts);
+	}
+	close(phc_fd);
+	return 0;
+}
+
+static int do_extts_loop_gps(char *extts_device, double kp, double ki, clockid_t dst)
+{
+	int64_t extts_offset;
+	uint64_t extts_ts;
+	int err;
+	struct ptp_extts_request extts;
+
+	phc_fd = open(extts_device, O_RDWR);
+	if (phc_fd < 0) {
+		fprintf(stderr, "cannot open '%s': %m\n", extts_device);
+		return -1;
+	}
+
+	memset(&extts, 0, sizeof(extts));
+	extts.index   = 0;
+	extts.flags  = PTP_RISING_EDGE | PTP_ENABLE_FEATURE;
+
+	err = ioctl(phc_fd, PTP_EXTTS_REQUEST, &extts);
+	if (err < 0){
+		perror("PTP_EXTTS_REQUEST failed");
+		return err ? errno : 0;
+	}
+
+
+	while (1) {
+		if (!read_extts(phc_fd, &extts_offset, &extts_ts)) {
+			continue;
+		}
+		else {
+			gps_read(&gpsdata); 
+		}
+		uint64_t utctime = (gpsdata.fix.time + 1.0) * NS_PER_SEC;
+		fprintf(stdout,"fix.time: %.0lf\t", gpsdata.fix.time);
+		do_servo(&servo, FD_TO_CLOCKID(phc_fd), extts_offset, utctime + tai_diff, kp, ki);
 		show_servo(stdout, "extts", extts_offset, extts_ts);
 	}
 	close(phc_fd);
@@ -239,6 +289,8 @@ static void usage(char *progname)
 		" -d [dev]       external timestamp source\n"
 		" -P [kp]        proportional constant (0.7)\n"
 		" -I [ki]        integration constant (0.3)\n"
+		" -g		 attach to gpsd\n"
+		" -t [offset]    UTC-TAI offset at the time of start\n"
 		" -h             prints this message and exits\n"
 		"\n",
 		progname);
@@ -250,12 +302,12 @@ int main(int argc, char *argv[])
 	char *device = NULL, *progname;
 	uint64_t phc_ts;
 	int64_t phc_offset;
-	int c;
+	int c, use_gpsd = 0, err;
 
 	/* Process the command line arguments. */
 	progname = strrchr(argv[0], '/');
 	progname = progname ? 1+progname : argv[0];
-	while (EOF != (c = getopt(argc, argv, "d:P:I:h"))) {
+	while (EOF != (c = getopt(argc, argv, "d:P:I:gt:h"))) {
 		switch (c) {
 		case 'd':
 			device = optarg;
@@ -266,26 +318,41 @@ int main(int argc, char *argv[])
 		case 'I':
 			ki = atof(optarg);
 			break;
+		case 'g':
+			use_gpsd = 1;
+			break;
+		case 't':
+			tai_diff = atoi(optarg);
+			tai_diff *= NS_PER_SEC;
+			break;
 		case 'h':
 			usage(progname);
-			return 0;
+			exit(EXIT_SUCCESS);
 		default:
 			usage(progname);
-			return -1;
+			exit(EXIT_FAILURE);
 		}
 	}
 
 	if (!device) {
 		usage(progname);
-		return -1;
+		exit(EXIT_FAILURE);
 	}
 
 	signal(SIGTERM, quit_handler);
 	signal(SIGQUIT, quit_handler);
 	signal(SIGINT, quit_handler);
 
-	if (device)
+	if(use_gpsd) {
+		if(err=gps_open(GPSD_SHARED_MEMORY, GPSD_SHARED_MEMORY, &gpsdata) == -1) {
+			fprintf(stderr,"%s: %d\n",gps_errstr(err),err);
+			exit(EXIT_FAILURE);
+		}
+
+		return do_extts_loop_gps(device, kp, ki, clock_open(device));
+	}
+	else
 		return do_extts_loop(device, kp, ki, clock_open(device));
 
-	return 0;
+	exit(EXIT_SUCCESS);
 }
