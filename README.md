@@ -43,6 +43,11 @@ the src subdirectory)
 
 If no error messages displayed, you're done!
 
+##Common quirks
+
+  * The ancillary clock features only work on adapters with assigned IP address
+    (otherwise the interrupt routines won't work)
+
 ##Utilites
 
 To exploit the enabled functionality two utilities are included in this release.
@@ -51,15 +56,16 @@ The 'perpps' utility selects the desired output frequency, and enables the
 PPS/synthesizer outputs of the cards. A common use case is the validation of the
 synchronization system, it works on PTP master and slave devices too. Please
 note that the outputs should be enabled in synchronized state (when the clock
-is slewed to the referece)!
+is being slewed to the reference)!
 
 example: sudo ./perpps -d /dev/ptp0 -p 1
 
 
 The 'ts2phc' utility programs the adapter to receive the external timestamp
 events. The program reads the timestamps, and corrects the local clock of the
-adapter. It currently works properly with PPS signals only (the driver detects
-the rising edges at the start of the second).
+adapter. It currently works properly with PPS signals only (the adapter/driver
+detects	the rising edges at the start of the second). It has an initial support
+of gpsd to query the absolute timestamps from a connected GPS receiver.
 
 example: sudo ./ts2phc -d /dev/ptp0
 
