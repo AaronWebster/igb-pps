@@ -567,7 +567,8 @@ struct igb_adapter {
 	struct delayed_work ptp_overflow_work;
 	struct work_struct ptp_tx_work;
 	struct work_struct ptp_pps_work;
-	struct work_struct ptp_extts_work;
+	struct work_struct ptp_extts1_work;
+	struct work_struct ptp_extts0_work;
 	struct work_struct ptp_fire_pps_event_work;
 	struct sk_buff *ptp_tx_skb;
 	spinlock_t tmreg_lock;
