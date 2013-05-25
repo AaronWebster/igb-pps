@@ -31,9 +31,9 @@ WARNING: Never connect 5V level signal source to the pins of the adapter!
 
 ##Installation
 
-  1. checkout the source code by issuing git clone
+  1. checkout the source code by issuing
 
-	https://fernya@bitbucket.org/fernya/igb-pps.git
+	git clone https://bitbucket.org/fernya/igb-pps.git igb-pps
 
   1. compile the perpps and ts2phc utilities (run 'make' in their
 subdirectories)
