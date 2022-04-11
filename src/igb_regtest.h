@@ -1,29 +1,5 @@
-/*******************************************************************************
-
-  Intel(R) Gigabit Ethernet Linux driver
-  Copyright(c) 2007-2012 Intel Corporation.
-
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
-
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
-
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
-
-  Contact Information:
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-
-*******************************************************************************/
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright(c) 2007 - 2019 Intel Corporation. */
 
 /* ethtool register test data */
 struct igb_reg_test {
@@ -70,8 +46,8 @@ static struct igb_reg_test reg_test_i210[] = {
 	{ E1000_TDLEN(0),  0x100, 4,  PATTERN_TEST, 0x000FFF80, 0x000FFFFF },
 	{ E1000_TDT(0),	   0x100, 4,  PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
 	{ E1000_TCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
 	{ E1000_RA,	   0, 16, TABLE64_TEST_LO,
 						0xFFFFFFFF, 0xFFFFFFFF },
@@ -109,8 +85,8 @@ static struct igb_reg_test reg_test_i350[] = {
 	{ E1000_TDT(0),	   0x100, 4,  PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_TDT(4),	   0x40,  4,  PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
 	{ E1000_TCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
 	{ E1000_RA,	   0, 16, TABLE64_TEST_LO,
 						0xFFFFFFFF, 0xFFFFFFFF },
@@ -152,8 +128,8 @@ static struct igb_reg_test reg_test_82580[] = {
 	{ E1000_TDT(0),	   0x100, 4,  PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_TDT(4),	   0x40,  4,  PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
 	{ E1000_TCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
 	{ E1000_RA,	   0, 16, TABLE64_TEST_LO,
 						0xFFFFFFFF, 0xFFFFFFFF },
@@ -181,8 +157,10 @@ static struct igb_reg_test reg_test_82576[] = {
 	{ E1000_RDBAH(4),  0x40,  12, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
 	{ E1000_RDLEN(4),  0x40,  12, PATTERN_TEST, 0x000FFFF0, 0x000FFFFF },
 	/* Enable all queues before testing. */
-	{ E1000_RXDCTL(0), 0x100, 4,  WRITE_NO_TEST, 0, E1000_RXDCTL_QUEUE_ENABLE },
-	{ E1000_RXDCTL(4), 0x40,  12, WRITE_NO_TEST, 0, E1000_RXDCTL_QUEUE_ENABLE },
+	{ E1000_RXDCTL(0), 0x100, 4,  WRITE_NO_TEST, 0,
+						E1000_RXDCTL_QUEUE_ENABLE },
+	{ E1000_RXDCTL(4), 0x40,  12, WRITE_NO_TEST, 0,
+						E1000_RXDCTL_QUEUE_ENABLE },
 	/* RDH is read-only for 82576, only test RDT. */
 	{ E1000_RDT(0),	   0x100, 4,  PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_RDT(4),	   0x40,  12, PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
@@ -198,8 +176,8 @@ static struct igb_reg_test reg_test_82576[] = {
 	{ E1000_TDBAH(4),  0x40,  12, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
 	{ E1000_TDLEN(4),  0x40,  12, PATTERN_TEST, 0x000FFFF0, 0x000FFFFF },
 	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
-	{ E1000_RCTL, 	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0x003FFFFB },
+	{ E1000_RCTL,	   0x100, 1,  SET_READ_TEST, 0x04CFB0FE, 0xFFFFFFFF },
 	{ E1000_TCTL,	   0x100, 1,  SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
 	{ E1000_RA,	   0, 16, TABLE64_TEST_LO,
 						0xFFFFFFFF, 0xFFFFFFFF },
@@ -220,23 +198,29 @@ static struct igb_reg_test reg_test_82575[] = {
 	{ E1000_FCAH,	0x100,	1, PATTERN_TEST, 0x0000FFFF, 0xFFFFFFFF },
 	{ E1000_FCT,	0x100,	1, PATTERN_TEST, 0x0000FFFF, 0xFFFFFFFF },
 	{ E1000_VET,	0x100,	1, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
-	{ E1000_RDBAL(0),	0x100,	4, PATTERN_TEST, 0xFFFFFF80, 0xFFFFFFFF },
-	{ E1000_RDBAH(0),	0x100,	4, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
-	{ E1000_RDLEN(0),	0x100,	4, PATTERN_TEST, 0x000FFF80, 0x000FFFFF },
+	{ E1000_RDBAL(0),   0x100,	4, PATTERN_TEST, 0xFFFFFF80,
+		0xFFFFFFFF },
+	{ E1000_RDBAH(0),   0x100,	4, PATTERN_TEST, 0xFFFFFFFF,
+		0xFFFFFFFF },
+	{ E1000_RDLEN(0),   0x100,	4, PATTERN_TEST, 0x000FFF80, 0x000FFFFF },
 	/* Enable all four RX queues before testing. */
-	{ E1000_RXDCTL(0),	0x100,	4, WRITE_NO_TEST, 0, E1000_RXDCTL_QUEUE_ENABLE },
+	{ E1000_RXDCTL(0),	0x100,	4, WRITE_NO_TEST, 0,
+						E1000_RXDCTL_QUEUE_ENABLE },
 	/* RDH is read-only for 82575, only test RDT. */
 	{ E1000_RDT(0),	0x100,	4, PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_RXDCTL(0),	0x100,	4, WRITE_NO_TEST, 0, 0 },
 	{ E1000_FCRTH,	0x100,	1, PATTERN_TEST, 0x0000FFF0, 0x0000FFF0 },
 	{ E1000_FCTTV,	0x100,	1, PATTERN_TEST, 0x0000FFFF, 0x0000FFFF },
 	{ E1000_TIPG,	0x100,	1, PATTERN_TEST, 0x3FFFFFFF, 0x3FFFFFFF },
-	{ E1000_TDBAL(0),	0x100,	4, PATTERN_TEST, 0xFFFFFF80, 0xFFFFFFFF },
-	{ E1000_TDBAH(0),	0x100,	4, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
-	{ E1000_TDLEN(0),	0x100,	4, PATTERN_TEST, 0x000FFF80, 0x000FFFFF },
+	{ E1000_TDBAL(0),   0x100,	4, PATTERN_TEST, 0xFFFFFF80,
+		0xFFFFFFFF },
+	{ E1000_TDBAH(0),   0x100,	4, PATTERN_TEST, 0xFFFFFFFF,
+		0xFFFFFFFF },
+	{ E1000_TDLEN(0),   0x100,	4, PATTERN_TEST, 0x000FFF80,
+		0x000FFFFF },
 	{ E1000_RCTL,	0x100,	1, SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
-	{ E1000_RCTL, 	0x100,	1, SET_READ_TEST, 0x04CFB3FE, 0x003FFFFB },
-	{ E1000_RCTL, 	0x100,	1, SET_READ_TEST, 0x04CFB3FE, 0xFFFFFFFF },
+	{ E1000_RCTL,	0x100,	1, SET_READ_TEST, 0x04CFB3FE, 0x003FFFFB },
+	{ E1000_RCTL,	0x100,	1, SET_READ_TEST, 0x04CFB3FE, 0xFFFFFFFF },
 	{ E1000_TCTL,	0x100,	1, SET_READ_TEST, 0xFFFFFFFF, 0x00000000 },
 	{ E1000_TXCW,	0x100,	1, PATTERN_TEST, 0xC000FFFF, 0x0000FFFF },
 	{ E1000_RA,	0,	16, TABLE64_TEST_LO,

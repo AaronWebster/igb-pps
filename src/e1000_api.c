@@ -1,29 +1,5 @@
-/*******************************************************************************
-
-  Intel(R) Gigabit Ethernet Linux driver
-  Copyright(c) 2007-2012 Intel Corporation.
-
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
-
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
-
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
-
-  Contact Information:
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-
-*******************************************************************************/
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright(c) 2007 - 2019 Intel Corporation. */
 
 #include "e1000_api.h"
 
@@ -182,9 +158,8 @@ s32 e1000_set_mac_type(struct e1000_hw *hw)
 	case E1000_DEV_ID_I350_DA4:
 		mac->type = e1000_i350;
 		break;
-#if defined(QV_RELEASE) && defined(SPRINGVILLE_FLASHLESS_HW)
-	case E1000_DEV_ID_I210_NVMLESS:
-#endif /* QV_RELEASE && SPRINGVILLE_FLASHLESS_HW */
+	case E1000_DEV_ID_I210_COPPER_FLASHLESS:
+	case E1000_DEV_ID_I210_SERDES_FLASHLESS:
 	case E1000_DEV_ID_I210_COPPER:
 	case E1000_DEV_ID_I210_COPPER_OEM1:
 	case E1000_DEV_ID_I210_COPPER_IT:
@@ -194,9 +169,14 @@ s32 e1000_set_mac_type(struct e1000_hw *hw)
 		mac->type = e1000_i210;
 		break;
 	case E1000_DEV_ID_I211_COPPER:
-	mac->type = e1000_i211;
-	break;
+		mac->type = e1000_i211;
+		break;
 
+	case E1000_DEV_ID_I354_BACKPLANE_1GBPS:
+	case E1000_DEV_ID_I354_SGMII:
+	case E1000_DEV_ID_I354_BACKPLANE_2_5GBPS:
+		mac->type = e1000_i354;
+		break;
 	default:
 		/* Should never have loaded on this device */
 		ret_val = -E1000_ERR_MAC_INIT;
@@ -254,6 +234,7 @@ s32 e1000_setup_init_funcs(struct e1000_hw *hw, bool init_device)
 	case e1000_82576:
 	case e1000_82580:
 	case e1000_i350:
+	case e1000_i354:
 		e1000_init_function_pointers_82575(hw);
 		break;
 	case e1000_i210:
@@ -287,6 +268,17 @@ s32 e1000_setup_init_funcs(struct e1000_hw *hw, bool init_device)
 		if (ret_val)
 			goto out;
 	}
+
+	/* NVM Update features structure initialization */
+	hw->nvmupd_features.major = E1000_NVMUPD_FEATURES_API_VER_MAJOR;
+	hw->nvmupd_features.minor = E1000_NVMUPD_FEATURES_API_VER_MINOR;
+	hw->nvmupd_features.size = sizeof(hw->nvmupd_features);
+	memset(hw->nvmupd_features.features, 0x0,
+	       E1000_NVMUPD_FEATURES_API_FEATURES_ARRAY_LEN *
+	       sizeof(*hw->nvmupd_features.features));
+
+	hw->nvmupd_features.features[0] =
+		E1000_NVMUPD_FEATURE_REGISTER_ACCESS_SUPPORT;
 
 out:
 	return ret_val;
@@ -624,10 +616,12 @@ void e1000_config_collision_dist(struct e1000_hw *hw)
  *
  *  Sets a Receive Address Register (RAR) to the specified address.
  **/
-void e1000_rar_set(struct e1000_hw *hw, u8 *addr, u32 index)
+int e1000_rar_set(struct e1000_hw *hw, u8 *addr, u32 index)
 {
 	if (hw->mac.ops.rar_set)
-		hw->mac.ops.rar_set(hw, addr, index);
+		return hw->mac.ops.rar_set(hw, addr, index);
+
+	return E1000_SUCCESS;
 }
 
 /**
@@ -687,11 +681,7 @@ bool e1000_enable_tx_pkt_filtering(struct e1000_hw *hw)
 s32 e1000_mng_host_if_write(struct e1000_hw *hw, u8 *buffer, u16 length,
 			    u16 offset, u8 *sum)
 {
-	if (hw->mac.ops.mng_host_if_write)
-		return hw->mac.ops.mng_host_if_write(hw, buffer, length,
-						     offset, sum);
-
-	return E1000_NOT_IMPLEMENTED;
+	return e1000_mng_host_if_write_generic(hw, buffer, length, offset, sum);
 }
 
 /**
@@ -704,10 +694,7 @@ s32 e1000_mng_host_if_write(struct e1000_hw *hw, u8 *buffer, u16 length,
 s32 e1000_mng_write_cmd_header(struct e1000_hw *hw,
 			       struct e1000_host_mng_command_header *hdr)
 {
-	if (hw->mac.ops.mng_write_cmd_header)
-		return hw->mac.ops.mng_write_cmd_header(hw, hdr);
-
-	return E1000_NOT_IMPLEMENTED;
+	return e1000_mng_write_cmd_header_generic(hw, hdr);
 }
 
 /**
@@ -722,25 +709,7 @@ s32 e1000_mng_write_cmd_header(struct e1000_hw *hw,
  **/
 s32 e1000_mng_enable_host_if(struct e1000_hw *hw)
 {
-	if (hw->mac.ops.mng_enable_host_if)
-		return hw->mac.ops.mng_enable_host_if(hw);
-
-	return E1000_NOT_IMPLEMENTED;
-}
-
-/**
- *  e1000_wait_autoneg - Waits for autonegotiation completion
- *  @hw: pointer to the HW structure
- *
- *  Waits for autoneg to complete. Currently no func pointer exists and all
- *  implementations are handled in the generic version of this function.
- **/
-s32 e1000_wait_autoneg(struct e1000_hw *hw)
-{
-	if (hw->mac.ops.wait_autoneg)
-		return hw->mac.ops.wait_autoneg(hw);
-
-	return E1000_SUCCESS;
+	return e1000_mng_enable_host_if_generic(hw);
 }
 
 /**
@@ -1177,3 +1146,4 @@ s32 e1000_init_thermal_sensor_thresh(struct e1000_hw *hw)
 
 	return E1000_SUCCESS;
 }
+

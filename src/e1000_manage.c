@@ -1,32 +1,7 @@
-/*******************************************************************************
-
-  Intel(R) Gigabit Ethernet Linux driver
-  Copyright(c) 2007-2012 Intel Corporation.
-
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
-
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
-
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
-
-  Contact Information:
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-
-*******************************************************************************/
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright(c) 2007 - 2019 Intel Corporation. */
 
 #include "e1000_api.h"
-
 /**
  *  e1000_calculate_checksum - Calculate checksum for buffer
  *  @buffer: pointer to EEPROM
@@ -138,11 +113,10 @@ bool e1000_enable_tx_pkt_filtering_generic(struct e1000_hw *hw)
 		return hw->mac.tx_pkt_filtering;
 	}
 
-	/*
-	 * If we can't read from the host interface for whatever
+	/* If we can't read from the host interface for whatever
 	 * reason, disable filtering.
 	 */
-	ret_val = hw->mac.ops.mng_enable_host_if(hw);
+	ret_val = e1000_mng_enable_host_if_generic(hw);
 	if (ret_val != E1000_SUCCESS) {
 		hw->mac.tx_pkt_filtering = false;
 		return hw->mac.tx_pkt_filtering;
@@ -158,8 +132,7 @@ bool e1000_enable_tx_pkt_filtering_generic(struct e1000_hw *hw)
 	hdr->checksum = 0;
 	csum = e1000_calculate_checksum((u8 *)hdr,
 					E1000_MNG_DHCP_COOKIE_LENGTH);
-	/*
-	 * If either the checksums or signature don't match, then
+	/* If either the checksums or signature don't match, then
 	 * the cookie area isn't considered valid, in which case we
 	 * take the safe route of assuming Tx filtering is enabled.
 	 */
@@ -252,8 +225,7 @@ s32 e1000_mng_host_if_write_generic(struct e1000_hw *hw, u8 *buffer,
 	/* Calculate length in DWORDs */
 	length >>= 2;
 
-	/*
-	 * The device driver writes the relevant command block into the
+	/* The device driver writes the relevant command block into the
 	 * ram area.
 	 */
 	for (i = 0; i < length; i++) {
@@ -305,18 +277,18 @@ s32 e1000_mng_write_dhcp_info_generic(struct e1000_hw *hw, u8 *buffer,
 	hdr.checksum = 0;
 
 	/* Enable the host interface */
-	ret_val = hw->mac.ops.mng_enable_host_if(hw);
+	ret_val = e1000_mng_enable_host_if_generic(hw);
 	if (ret_val)
 		return ret_val;
 
 	/* Populate the host interface with the contents of "buffer". */
-	ret_val = hw->mac.ops.mng_host_if_write(hw, buffer, length,
-						sizeof(hdr), &(hdr.checksum));
+	ret_val = e1000_mng_host_if_write_generic(hw, buffer, length,
+						  sizeof(hdr), &(hdr.checksum));
 	if (ret_val)
 		return ret_val;
 
 	/* Write the manageability command header */
-	ret_val = hw->mac.ops.mng_write_cmd_header(hw, &hdr);
+	ret_val = e1000_mng_write_cmd_header_generic(hw, &hdr);
 	if (ret_val)
 		return ret_val;
 
@@ -359,7 +331,7 @@ bool e1000_enable_mng_pass_thru(struct e1000_hw *hw)
 			return true;
 	} else if ((manc & E1000_MANC_SMBUS_EN) &&
 		   !(manc & E1000_MANC_ASF_EN)) {
-			return true;
+		return true;
 	}
 
 	return false;
@@ -406,8 +378,7 @@ s32 e1000_host_interface_command(struct e1000_hw *hw, u8 *buffer, u32 length)
 	/* Calculate length in DWORDs */
 	length >>= 2;
 
-	/*
-	 * The device driver writes the relevant command block
+	/* The device driver writes the relevant command block
 	 * into the ram area.
 	 */
 	for (i = 0; i < length; i++)
@@ -519,8 +490,7 @@ s32 e1000_load_firmware(struct e1000_hw *hw, u8 *buffer, u32 length)
 	/* Calculate length in DWORDs */
 	length >>= 2;
 
-	/*
-	 * The device driver writes the relevant FW code block
+	/* The device driver writes the relevant FW code block
 	 * into the ram area in DWORDs via 1kB ram addressing window.
 	 */
 	for (i = 0; i < length; i++) {
@@ -557,5 +527,4 @@ s32 e1000_load_firmware(struct e1000_hw *hw, u8 *buffer, u32 length)
 
 	return E1000_SUCCESS;
 }
-
 

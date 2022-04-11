@@ -1,29 +1,5 @@
-/*******************************************************************************
-
-  Intel(R) Gigabit Ethernet Linux driver
-  Copyright(c) 2007-2012 Intel Corporation.
-
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
-
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
-
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
-
-  Contact Information:
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-
-*******************************************************************************/
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright(c) 2007 - 2019 Intel Corporation. */
 
 #ifndef _E1000_82575_H_
 #define _E1000_82575_H_
@@ -236,6 +212,8 @@ union e1000_adv_rx_desc {
 #define E1000_RXDADV_RSSTYPE_IPV6_UDP_EX 0x00000009
 
 /* RSS Packet Types as indicated in the receive descriptor */
+#define E1000_RXDADV_PKTTYPE_ILMASK	0x000000F0
+#define E1000_RXDADV_PKTTYPE_TLMASK	0x00000F00
 #define E1000_RXDADV_PKTTYPE_NONE	0x00000000
 #define E1000_RXDADV_PKTTYPE_IPV4	0x00000010 /* IPV4 hdr present */
 #define E1000_RXDADV_PKTTYPE_IPV4_EX	0x00000020 /* IPV4 hdr + extensions */
@@ -351,10 +329,13 @@ struct e1000_adv_tx_context_desc {
 #define E1000_DCA_RXCTRL_DESC_DCA_EN	(1 << 5) /* DCA Rx Desc enable */
 #define E1000_DCA_RXCTRL_HEAD_DCA_EN	(1 << 6) /* DCA Rx Desc header ena */
 #define E1000_DCA_RXCTRL_DATA_DCA_EN	(1 << 7) /* DCA Rx Desc payload ena */
+#define E1000_DCA_RXCTRL_DESC_RRO_EN	(1 << 9) /* DCA Rx Desc Relax Order */
 
 #define E1000_DCA_TXCTRL_CPUID_MASK	0x0000001F /* Tx CPUID Mask */
 #define E1000_DCA_TXCTRL_DESC_DCA_EN	(1 << 5) /* DCA Tx Desc enable */
+#define E1000_DCA_TXCTRL_DESC_RRO_EN	(1 << 9) /* Tx rd Desc Relax Order */
 #define E1000_DCA_TXCTRL_TX_WB_RO_EN	(1 << 11) /* Tx Desc writeback RO bit */
+#define E1000_DCA_TXCTRL_DATA_RRO_EN	(1 << 13) /* Tx rd data Relax Order */
 
 #define E1000_DCA_TXCTRL_CPUID_MASK_82576	0xFF000000 /* Tx CPUID Mask */
 #define E1000_DCA_RXCTRL_CPUID_MASK_82576	0xFF000000 /* Rx CPUID Mask */
@@ -466,9 +447,16 @@ void e1000_vmdq_set_loopback_pf(struct e1000_hw *hw, bool enable);
 void e1000_vmdq_set_anti_spoofing_pf(struct e1000_hw *hw, bool enable, int pf);
 void e1000_vmdq_set_replication_pf(struct e1000_hw *hw, bool enable);
 s32 e1000_init_nvm_params_82575(struct e1000_hw *hw);
+s32  e1000_init_hw_82575(struct e1000_hw *hw);
 
+void e1000_write_vfta_i350(struct e1000_hw *hw, u32 offset, u32 value);
 u16 e1000_rxpbs_adjust_82580(u32 data);
-s32 e1000_set_eee_i350(struct e1000_hw *);
+s32 e1000_read_emi_reg(struct e1000_hw *hw, u16 addr, u16 *data);
+s32 e1000_set_eee_i350(struct e1000_hw *hw, bool adv1G, bool adv100M);
+s32 e1000_set_eee_i354(struct e1000_hw *hw, bool adv1G, bool adv100M);
+s32 e1000_get_eee_status_i354(struct e1000_hw *, bool *);
+s32 e1000_initialize_M88E1512_phy(struct e1000_hw *hw);
+s32 e1000_initialize_M88E1543_phy(struct e1000_hw *hw);
 #define E1000_I2C_THERMAL_SENSOR_ADDR	0xF8
 #define E1000_EMC_INTERNAL_DATA		0x00
 #define E1000_EMC_INTERNAL_THERM_LIMIT	0x20

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+echo 'func igb_ptp_observation_work +p' > /sys/kernel/debug/dynamic_debug/control

@@ -1,37 +1,15 @@
-/*******************************************************************************
-
-  Intel(R) Gigabit Ethernet Linux driver
-  Copyright(c) 2007-2012 Intel Corporation.
-
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
-
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
-
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
-
-  Contact Information:
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-
-*******************************************************************************/
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright(c) 2007 - 2019 Intel Corporation. */
 
 #include "e1000_mbx.h"
 
 /**
  *  e1000_null_mbx_check_for_flag - No-op function, return 0
  *  @hw: pointer to the HW structure
+ *  @mbx_id: id of mailbox to read
  **/
-static s32 e1000_null_mbx_check_for_flag(struct e1000_hw *hw, u16 mbx_id)
+static s32 e1000_null_mbx_check_for_flag(struct e1000_hw E1000_UNUSEDARG *hw,
+					 u16 E1000_UNUSEDARG mbx_id)
 {
 	DEBUGFUNC("e1000_null_mbx_check_flag");
 
@@ -41,9 +19,14 @@ static s32 e1000_null_mbx_check_for_flag(struct e1000_hw *hw, u16 mbx_id)
 /**
  *  e1000_null_mbx_transact - No-op function, return 0
  *  @hw: pointer to the HW structure
+ *  @msg: The message buffer
+ *  @size: Length of buffer
+ *  @mbx_id: id of mailbox to read
  **/
-static s32 e1000_null_mbx_transact(struct e1000_hw *hw, u32 *msg, u16 size,
-				   u16 mbx_id)
+static s32 e1000_null_mbx_transact(struct e1000_hw E1000_UNUSEDARG *hw,
+				   u32 E1000_UNUSEDARG *msg,
+				   u16 E1000_UNUSEDARG size,
+				   u16 E1000_UNUSEDARG mbx_id)
 {
 	DEBUGFUNC("e1000_null_mbx_rw_msg");
 
@@ -391,18 +374,26 @@ static s32 e1000_obtain_mbx_lock_pf(struct e1000_hw *hw, u16 vf_number)
 {
 	s32 ret_val = -E1000_ERR_MBX;
 	u32 p2v_mailbox;
+	int count = 10;
 
 	DEBUGFUNC("e1000_obtain_mbx_lock_pf");
 
-	/* Take ownership of the buffer */
-	E1000_WRITE_REG(hw, E1000_P2VMAILBOX(vf_number), E1000_P2VMAILBOX_PFU);
+	do {
+		/* Take ownership of the buffer */
+		E1000_WRITE_REG(hw, E1000_P2VMAILBOX(vf_number),
+				E1000_P2VMAILBOX_PFU);
 
-	/* reserve mailbox for vf use */
-	p2v_mailbox = E1000_READ_REG(hw, E1000_P2VMAILBOX(vf_number));
-	if (p2v_mailbox & E1000_P2VMAILBOX_PFU)
-		ret_val = E1000_SUCCESS;
+		/* reserve mailbox for pf use */
+		p2v_mailbox = E1000_READ_REG(hw, E1000_P2VMAILBOX(vf_number));
+		if (p2v_mailbox & E1000_P2VMAILBOX_PFU) {
+			ret_val = E1000_SUCCESS;
+			break;
+		}
+		usec_delay(1000);
+	} while (count-- > 0);
 
 	return ret_val;
+
 }
 
 /**
@@ -497,6 +488,7 @@ s32 e1000_init_mbx_params_pf(struct e1000_hw *hw)
 	switch (hw->mac.type) {
 	case e1000_82576:
 	case e1000_i350:
+	case e1000_i354:
 		mbx->timeout = 0;
 		mbx->usec_delay = 0;
 
@@ -515,6 +507,7 @@ s32 e1000_init_mbx_params_pf(struct e1000_hw *hw)
 		mbx->stats.reqs = 0;
 		mbx->stats.acks = 0;
 		mbx->stats.rsts = 0;
+		/* Fall through */
 	default:
 		return E1000_SUCCESS;
 	}

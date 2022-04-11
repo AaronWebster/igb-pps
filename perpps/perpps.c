@@ -42,6 +42,7 @@ static void usage(char *progname)
 		" -p 1/0                 enable/disable PPS\n"
 		" -P [channel, period]   enable periodic output\n"
 		"                        0 period time disables the output\n"
+		" -i [index]             select SDP index\n"
 		"\n",
 		progname);
 }
@@ -49,14 +50,15 @@ static void usage(char *progname)
 int main(int argc, char *argv[])
 {
 	char *device = NULL, *progname;
-	int c, err, fd, ppsen = 0, ppsel = 0, per_sel = 0, per_channel = 0, per_period = 0;
+	int c, err, fd, ppsen = 0, ppsel = 0, per_sel = 0, pin_index_sel = 0, per_channel = 0, per_period = 0, pin_index = 0;
 	struct ptp_perout_request perout;
+	struct ptp_pin_desc pin_desc;
 
 
 	/* Process the command line arguments. */
 	progname = strrchr(argv[0], '/');
 	progname = progname ? 1+progname : argv[0];
-	while (EOF != (c = getopt(argc, argv, "hd:p:P:"))) {
+	while (EOF != (c = getopt(argc, argv, "hd:p:P:i:"))) {
 		switch (c) {
 		case 'd':
 			device = optarg;
@@ -70,6 +72,10 @@ int main(int argc, char *argv[])
 			per_channel = strtol(optarg, &optarg, 0);
 			if (optarg[0])
 				per_period = strtol(optarg + 1, 0, 0);
+			break;
+		case 'i':
+			pin_index_sel = 1;
+			pin_index = strtol(optarg, &optarg, 0);
 			break;
 		case 'h':
 			usage(progname);
@@ -98,10 +104,21 @@ int main(int argc, char *argv[])
 	}
 
 	if(per_sel) {
-		
+		int disable = per_period == 0;
+		memset(&pin_desc, 0, sizeof(pin_desc));
+		pin_desc.index = pin_index;
+		pin_desc.func = disable?PTP_PF_NONE:PTP_PF_PEROUT;
+		pin_desc.chan = per_channel;
+		err = ioctl(fd, PTP_PIN_SETFUNC, &pin_desc);
+		if (err < 0) {
+			perror("PTP_PIN_SETFUNC request failed");
+			return err ? errno : 0;
+		}
+
 		memset(&perout, 0, sizeof(perout));
 		perout.index   = per_channel;
 		perout.period.nsec  = per_period;
+		perout.flags = disable?0:PTP_ENABLE_FEATURE;
 
 		err = ioctl(fd, PTP_PEROUT_REQUEST, &perout);
 		if (err < 0){
