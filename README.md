@@ -1,9 +1,9 @@
-#igb driver with Pulse Per Second I/O for Intel i350 and i210 series
+# igb driver with Pulse Per Second I/O for Intel i350 and i210 series
 
 This software implements the necessary clock sync services needed for high
 quality clock synchronization.
 
-##Main features
+## Main features
 
   * clock synthesizer outputs (works on 82580, i350, i210 series)
   * Pulse Per Second outputs (i350, i210)
@@ -24,12 +24,12 @@ Please note that the multi port i350 adapters have independent local clocks per 
 
 WARNING: Never connect 5V level signal source to the pins of the adapter!
 
-##Requirements
+## Requirements
 
   * Intel i350, i210 or 82580 (partially supported) network adapters
   * Linux kernel version >3.0 (>3.2 recommended), with PTP modules compiled
 
-##Installation
+## Installation
 
   1. checkout the source code by issuing   
 `git clone https://bitbucket.org/fernya/igb-pps.git igb-pps`
@@ -41,12 +41,12 @@ the src subdirectory)
 
 If no error messages displayed, you're done!
 
-##Common quirks
+## Common quirks
 
   * The ancillary clock features only work on adapters with assigned IP address
     (otherwise the interrupt routines won't work)
 
-##Utilites
+## Utilites
 
 To exploit the enabled functionality two utilities are included in this release.
 
